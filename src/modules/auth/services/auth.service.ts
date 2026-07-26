@@ -73,6 +73,7 @@ export class AuthService {
     // Save refresh token to DB
     await new this.refreshTokenModel({
       user: userWithPassword._id,
+      jti,
       token: refreshToken,
       expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
     }).save();
@@ -118,6 +119,7 @@ export class AuthService {
 
     await new this.refreshTokenModel({
       user: user._id,
+      jti: newJti,
       token: newRefreshToken,
       expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
     }).save();

@@ -75,8 +75,12 @@ export class UserService {
   async getByEmail(email: string, selectPassword = false): Promise<EnrichedUser & { password?: string }> {
     const query = this.userModel.findOne({ email, isDeleted: false });
     const user = await (selectPassword ? query.select('+password') : query);
+    const rawPassword = user?.password;
     const enriched = await this.enrich(user);
     if (!enriched) throw new NotFoundException('User not found');
+    if (selectPassword && rawPassword) {
+      enriched.password = rawPassword;
+    }
     return enriched as EnrichedUser & { password?: string };
   }
 

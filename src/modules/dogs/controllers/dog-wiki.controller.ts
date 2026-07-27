@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards, ParseIntPipe, DefaultValuePipe } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { DogsWikiService, QueryOptions } from '../services/dog-wiki.service';
 import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
@@ -8,26 +8,39 @@ import { Public } from '../../../common/decorators/public.decorator';
 
 @ApiTags('Dogs Wiki')
 @Controller('api/wiki/dogs')
-export class BffDogsWikiController {
+export class DogWikiController {
   constructor(private readonly dogsWikiService: DogsWikiService) {}
 
   @Public()
   @Get()
   @ApiOperation({ summary: 'Get all dog breeds' })
-  async getAllBreeds(@Query() query: any) {
+  async getAllBreeds(
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+    @Query('limit', new DefaultValuePipe(20), ParseIntPipe) limit: number,
+    @Query('search') search?: string,
+    @Query('group') group?: string,
+    @Query('energy_level') energy_level?: string,
+    @Query('trainability') trainability?: string,
+    @Query('shedding_level') shedding_level?: string,
+    @Query('suitable_for') suitable_for?: string,
+    @Query('lang') lang = 'en',
+    @Query('sort') sort?: string,
+    @Query('ids') ids?: string,
+    @Query('excludeIds') excludeIds?: string,
+  ) {
     const options: QueryOptions = {
-      page: parseInt(query.page) || 1,
-      limit: parseInt(query.limit) || 20,
-      search: query.search,
-      group: query.group,
-      energy_level: query.energy_level ? parseInt(query.energy_level) : undefined,
-      trainability: query.trainability ? parseInt(query.trainability) : undefined,
-      shedding_level: query.shedding_level ? parseInt(query.shedding_level) : undefined,
-      suitable_for: query.suitable_for,
-      lang: query.lang as 'vi' | 'en' || 'en',
-      sort: query.sort,
-      ids: query.ids ? query.ids.split(',') : undefined,
-      excludeIds: query.excludeIds ? query.excludeIds.split(',') : undefined,
+      page,
+      limit,
+      search,
+      group,
+      energy_level: energy_level ? parseInt(energy_level, 10) : undefined,
+      trainability: trainability ? parseInt(trainability, 10) : undefined,
+      shedding_level: shedding_level ? parseInt(shedding_level, 10) : undefined,
+      suitable_for,
+      lang: (lang === 'vi' || lang === 'en') ? lang : 'en',
+      sort,
+      ids: ids ? ids.split(',') : undefined,
+      excludeIds: excludeIds ? excludeIds.split(',') : undefined,
     };
     return this.dogsWikiService.getAllBreeds(options);
   }

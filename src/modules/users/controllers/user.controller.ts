@@ -1,4 +1,4 @@
-import { Controller, Get, Put, Delete, Body, Param, Query, UseGuards, Req } from '@nestjs/common';
+import { Controller, Get, Put, Delete, Body, Param, Query, UseGuards, Req, ParseIntPipe, DefaultValuePipe } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { UserService } from '../services/user.service';
 import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
@@ -9,7 +9,7 @@ import { Roles } from '../../../common/decorators/roles.decorator';
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('api/user')
-export class BffUserController {
+export class UserController {
   constructor(private readonly userService: UserService) {}
 
   @Get('profile')
@@ -34,10 +34,14 @@ export class BffUserController {
   @Roles('admin', 'de')
   @Get('all')
   @ApiOperation({ summary: 'Get all users (Admin/DE)' })
-  async getAllUsers(@Query('page') page: string, @Query('limit') limit: string, @Query('search') search: string) {
+  async getAllUsers(
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+    @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit: number,
+    @Query('search') search?: string,
+  ) {
     return this.userService.getAll({
-      page: parseInt(page, 10) || 1,
-      limit: parseInt(limit, 10) || 10,
+      page,
+      limit,
       search,
     });
   }

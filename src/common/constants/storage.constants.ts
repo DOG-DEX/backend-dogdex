@@ -1,5 +1,5 @@
 /**
- * Các khóa được sử dụng trong Local Storage ở phía client.
+ * Key identifiers for client local storage keys.
  */
 export const STORAGE_KEYS = {
   ACCESS_TOKEN: 'accessToken',

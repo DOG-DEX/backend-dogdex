@@ -5,9 +5,9 @@ import { CommunityPostDoc, PostType, PostStatus } from '../schemas/community_pos
 import { PredictionService } from '../../predictions/services/prediction.service';
 import { MatchingService } from './matching.service';
 
-function toSlug(str: string): string {
-  return str.toLowerCase().replace(/[\s_]+/g, '-').replace(/[^\w-]+/g, '').trim();
-}
+import { slugify } from '../../../common/utils/slugify.util';
+
+const toSlug = slugify;
 
 export interface CreatePostDTO {
   type: PostType;

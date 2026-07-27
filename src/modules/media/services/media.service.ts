@@ -6,7 +6,7 @@ import { DirectoryDoc } from '../schemas/directory.model';
 import * as path from 'path';
 import * as fs from 'fs/promises';
 import { cloudinary } from '../../../config/cloudinary.config';
-import { logger } from '../../../utils/logger.util';
+import { logger } from '../../../common/utils/logger.util';
 
 export interface FindMediasOptions {
   page?: number;

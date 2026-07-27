@@ -12,14 +12,8 @@ import { MediaProcessorService } from '../../../shared/media-processor/media-pro
 import { CloudinaryService } from '../../../shared/cloudinary/cloudinary.service';
 import { AIClientService } from '../../../shared/ai-client/ai-client.service';
 import { PredictionQueueService } from './prediction-queue.service';
-import { logger } from '../../../utils/logger.util';
-
-const PREDICTION_SOURCES = {
-  IMAGE_UPLOAD: 'image_upload',
-  VIDEO_UPLOAD: 'video_upload',
-  STREAM_CAPTURE: 'stream_capture',
-  URL_INPUT: 'url_input',
-} as const;
+import { logger } from '../../../common/utils/logger.util';
+import { PREDICTION_SOURCES } from '../../../common/constants/prediction.constants';
 
 @Injectable()
 export class PredictionService {

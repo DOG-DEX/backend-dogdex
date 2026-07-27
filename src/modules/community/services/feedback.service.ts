@@ -9,7 +9,7 @@ import { UserDoc } from '../../users/schemas/user.model';
 import { MediaDoc } from '../../media/schemas/medias.model';
 import { CloudinaryService } from '../../../shared/cloudinary/cloudinary.service';
 import { MailService } from '../../../shared/mail/mail.service';
-import { logger } from '../../../utils/logger.util';
+import { logger } from '../../../common/utils/logger.util';
 
 export interface QueryFilters {
   status?: string;

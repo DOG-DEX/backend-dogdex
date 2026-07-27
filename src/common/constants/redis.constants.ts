@@ -6,5 +6,5 @@ export const REDIS_KEYS = {
   RECOMMENDED_PRODUCTS_PREFIX: 'rec-products:',
   USER_ACHIEVEMENTS_PREFIX: 'user:achievements:',
   USER_ACHIEVEMENT_STATS_PREFIX: 'user:achievement_stats:',
-  CACHE_24H_SECONDS: 3600 * 24, // 24 giờ
+  CACHE_24H_SECONDS: 3600 * 24, // 24 hours
 };

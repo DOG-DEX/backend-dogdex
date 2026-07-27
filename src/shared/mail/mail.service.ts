@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import nodemailer from 'nodemailer';
-import { logger } from '../../utils/logger.util';
+import { logger } from '../../common/utils/logger.util';
 
 export type EmailLanguage = 'vi' | 'en';
 

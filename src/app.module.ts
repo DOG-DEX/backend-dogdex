@@ -73,7 +73,6 @@ import { ModerationModule } from './modules/moderation/moderation.module';
   controllers: [AppController],
   providers: [
     AppService,
-    { provide: APP_GUARD, useClass: JwtAuthGuard },
   ],
 })
 export class AppModule {}

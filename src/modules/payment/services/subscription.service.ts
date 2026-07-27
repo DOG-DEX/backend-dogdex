@@ -8,7 +8,7 @@ import { SubscriptionDoc } from '../schemas/subscription.model';
 import { TransactionDoc } from '../schemas/transaction.model';
 import { UserDoc } from '../../users/schemas/user.model';
 import { PlanDoc } from '../schemas/plan.model';
-import { logger } from '../../../utils/logger.util';
+import { logger } from '../../../common/utils/logger.util';
 
 @Injectable()
 export class SubscriptionService {
@@ -19,7 +19,7 @@ export class SubscriptionService {
     @InjectModel('Plan') private planModel: Model<PlanDoc>,
     private readonly momoService: MomoService,
     private readonly planService: PlanService
-  ) {}
+  ) { }
 
   async getAvailablePlans(): Promise<any[]> {
     const plans = await this.planService.getPublicPlans();
@@ -197,7 +197,7 @@ export class SubscriptionService {
         await transaction.save();
         return;
       }
-      
+
       await this.subscriptionModel.updateMany(
         {
           userId: user._id,

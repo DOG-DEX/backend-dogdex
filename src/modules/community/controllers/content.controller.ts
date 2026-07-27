@@ -1,4 +1,4 @@
 import { Controller } from '@nestjs/common';
 
-@Controller('bff-content')
-export class BffContentController {}
+@Controller('api/content')
+export class ContentController {}

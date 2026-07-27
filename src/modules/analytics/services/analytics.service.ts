@@ -3,7 +3,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { AnalyticsEventDoc } from '../schemas/analytics_event.model';
 import { Request } from 'express';
-import { logger } from '../../../utils/logger.util';
+import { logger } from '../../../common/utils/logger.util';
 
 export interface TrackEventArgs {
   eventName: string;

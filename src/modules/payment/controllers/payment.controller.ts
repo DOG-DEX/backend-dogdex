@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards, ParseIntPipe, DefaultValuePipe, BadRequestException } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { PlanService, IPlanQuery } from '../services/plan.service';
 import { SubscriptionService } from '../services/subscription.service';
@@ -6,13 +6,14 @@ import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../../common/guards/roles.guard';
 import { Roles } from '../../../common/decorators/roles.decorator';
 import { Public } from '../../../common/decorators/public.decorator';
+import { CurrentUser } from '../../../common/decorators/current-user.decorator';
 
 @ApiTags('Plans')
 @Controller('api/plans')
 export class PaymentController {
   constructor(
     private readonly planService: PlanService,
-    private readonly subscriptionService: SubscriptionService
+    private readonly subscriptionService: SubscriptionService,
   ) {}
 
   @Public()
@@ -34,11 +35,15 @@ export class PaymentController {
   @Roles('admin', 'de')
   @Get()
   @ApiOperation({ summary: 'Get all plans paginated (Admin/DE)' })
-  async getAllPlans(@Query() query: any) {
+  async getAllPlans(
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+    @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit: number,
+    @Query('search') search?: string,
+  ) {
     const q: IPlanQuery = {
-      page: parseInt(query.page, 10) || 1,
-      limit: parseInt(query.limit, 10) || 10,
-      search: query.search,
+      page,
+      limit,
+      search,
     };
     return this.planService.getAllPaginated(q);
   }
@@ -75,8 +80,15 @@ export class PaymentController {
   @UseGuards(JwtAuthGuard)
   @Post('checkout')
   @ApiOperation({ summary: 'Create Momo Checkout Session' })
-  async createCheckoutSession(@Body() body: any, @Query('userId') userId: string) {
-    // Usually userId is from req.user, but matching legacy behavior
+  async createCheckoutSession(
+    @CurrentUser('userId') currentUserId: string,
+    @Body() body: any,
+    @Query('userId') queryUserId?: string,
+  ) {
+    const userId = currentUserId || queryUserId;
+    if (!userId) {
+      throw new BadRequestException('Vui lòng đăng nhập để thanh toán.');
+    }
     const { planSlug, billingPeriod } = body;
     return this.subscriptionService.createCheckoutSession(userId, planSlug, billingPeriod);
   }
@@ -93,7 +105,14 @@ export class PaymentController {
   @UseGuards(JwtAuthGuard)
   @Post('cancel')
   @ApiOperation({ summary: 'Cancel current subscription' })
-  async cancelSubscription(@Query('userId') userId: string) {
+  async cancelSubscription(
+    @CurrentUser('userId') currentUserId: string,
+    @Query('userId') queryUserId?: string,
+  ) {
+    const userId = currentUserId || queryUserId;
+    if (!userId) {
+      throw new BadRequestException('Vui lòng đăng nhập để hủy gói cước.');
+    }
     return this.subscriptionService.cancelSubscription(userId);
   }
 
@@ -102,13 +121,19 @@ export class PaymentController {
   @Roles('admin')
   @Get('admin/transactions')
   @ApiOperation({ summary: 'Get all transactions (Admin)' })
-  async getTransactions(@Query() query: any) {
+  async getTransactions(
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+    @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit: number,
+    @Query('search') search?: string,
+    @Query('status') status?: string,
+    @Query('planId') planId?: string,
+  ) {
     return this.subscriptionService.getAllTransactions({
-      page: parseInt(query.page) || 1,
-      limit: parseInt(query.limit) || 10,
-      search: query.search,
-      status: query.status,
-      planId: query.planId,
+      page,
+      limit,
+      search,
+      status,
+      planId,
     });
   }
 
@@ -117,14 +142,19 @@ export class PaymentController {
   @Roles('admin')
   @Get('admin/subscriptions')
   @ApiOperation({ summary: 'Get all subscriptions (Admin)' })
-  async getSubscriptions(@Query() query: any) {
+  async getSubscriptions(
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+    @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit: number,
+    @Query('search') search?: string,
+    @Query('status') status?: string,
+    @Query('planId') planId?: string,
+  ) {
     return this.subscriptionService.getAllSubscriptions({
-      page: parseInt(query.page) || 1,
-      limit: parseInt(query.limit) || 10,
-      search: query.search,
-      status: query.status,
-      planId: query.planId,
+      page,
+      limit,
+      search,
+      status,
+      planId,
     });
   }
 }
-

@@ -11,7 +11,7 @@ import { Public } from '../../../common/decorators/public.decorator';
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
 @Controller('api/dog')
-export class BffDogController {
+export class DogController {
   constructor(private readonly dogService: DogService) {}
 
   @Post()

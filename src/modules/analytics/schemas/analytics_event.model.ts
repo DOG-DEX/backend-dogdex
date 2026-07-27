@@ -1,5 +1,5 @@
 import mongoose, { Schema, Document } from "mongoose";
-import { AnalyticsEventName } from "../../../constants/analytics.constants";
+import { AnalyticsEventName } from "../../../common/constants/analytics.constants";
 
 export interface AnalyticsEventDoc extends Document {
   eventName: AnalyticsEventName;

@@ -12,8 +12,7 @@ if (!redisUrl) {
     url: redisUrl,
   });
 
-  client.on('connect', () => {
-  });
+  client.on('connect', () => {});
 
   client.on('ready', () => {
     logger.info('[Redis] Connection on ' + redisUrl);
@@ -24,7 +23,6 @@ if (!redisUrl) {
   });
 
   client.connect();
-
 }
 
 export const redisClient = client;

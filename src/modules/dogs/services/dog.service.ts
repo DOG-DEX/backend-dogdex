@@ -11,7 +11,7 @@ import { PlanDoc } from '../../payment/schemas/plan.model';
 import { CommunityPostDoc } from '../../community/schemas/community_post.model';
 import { MailService } from '../../../shared/mail/mail.service';
 import { CloudinaryService } from '../../../shared/cloudinary/cloudinary.service';
-import { redisClient } from '../../../utils/redis.util';
+import { redisClient } from '../../../common/utils/redis.util';
 
 const QR_ALERT_COOLDOWN_SECONDS = 30 * 60; // 30 minutes
 

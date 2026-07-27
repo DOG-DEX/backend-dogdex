@@ -3,7 +3,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { UserCollectionDoc } from '../../users/schemas/user_collection.model';
 import { CloudinaryService } from '../../../shared/cloudinary/cloudinary.service';
-import { redisClient } from '../../../utils/redis.util';
+import { redisClient } from '../../../common/utils/redis.util';
 
 const CACHE_TTL = 60 * 15; // 15 minutes
 

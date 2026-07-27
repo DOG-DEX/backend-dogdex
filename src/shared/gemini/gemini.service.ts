@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import { redisClient } from '../../utils/redis.util';
+import { redisClient } from '../../common/utils/redis.util';
 
 @Injectable()
 export class GeminiService {

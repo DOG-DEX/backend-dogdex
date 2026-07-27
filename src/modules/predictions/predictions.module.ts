@@ -10,8 +10,8 @@ import { UserModel } from '../users/schemas/user.model';
 import { FeedbackModel } from '../community/schemas/feedback.model';
 import { AnalyticsEventModel } from '../analytics/schemas/analytics_event.model';
 
-// Controller (still at root — bff_ removed, routes preserved)
-import { BffPredictionController } from './controllers/prediction.controller';
+// Controller
+import { PredictionController } from './controllers/prediction.controller';
 
 // Services (new services/ subfolder)
 import { PredictionService } from './services/prediction.service';
@@ -34,7 +34,7 @@ import { AnalyticsService } from '../analytics/services/analytics.service';
       { name: 'AnalyticsEvent', schema: AnalyticsEventModel.schema },
     ]),
   ],
-  controllers: [BffPredictionController],
+  controllers: [PredictionController],
   providers: [
     PredictionService,
     PredictionQueueService,

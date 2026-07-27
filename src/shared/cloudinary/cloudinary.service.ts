@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { v2 as cloudinaryClient, UploadApiResponse } from 'cloudinary';
-import { logger } from '../../utils/logger.util';
+import { logger } from '../../common/utils/logger.util';
 
 export type AccessMode = 'public' | 'private';
 

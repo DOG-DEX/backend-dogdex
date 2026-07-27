@@ -7,8 +7,8 @@ import os from 'os';
 import axios from 'axios';
 import { Queue, Worker, QueueEvents, Job } from 'bullmq';
 import IORedis from 'ioredis';
-import { logger } from '../../utils/logger.util';
-import { predictionNotifier } from '../../utils/predictionNotifier.util';
+import { logger } from '../../common/utils/logger.util';
+import { predictionNotifier } from '../../common/utils/predictionNotifier.util';
 
 const AI_SERVICE_URL = process.env.AI_SERVICE_URL || 'http://localhost:8000';
 

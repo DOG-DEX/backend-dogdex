@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Query, Body, BadRequestException } from '@nestjs/common';
+import { Controller, Get, Post, Query, Body, BadRequestException, ParseIntPipe, DefaultValuePipe } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { LeaderboardService } from '../services/leaderboard.service';
 import { MailService } from '../../../shared/mail/mail.service';
@@ -17,8 +17,8 @@ export class AnalyticsController {
   @ApiOperation({ summary: 'Get global, country, or city leaderboard' })
   async getLeaderboard(
     @Query('type') type = 'global',
+    @Query('limit', new DefaultValuePipe(50), ParseIntPipe) limit: number,
     @Query('value') value?: string,
-    @Query('limit') limit = 50,
   ) {
     const validTypes = ['global', 'country', 'city'];
     if (!validTypes.includes(type)) {
@@ -27,7 +27,7 @@ export class AnalyticsController {
     const data = await this.leaderboardService.getLeaderboard(
       type as 'global' | 'country' | 'city',
       value || null,
-      +limit,
+      limit,
     );
     return { success: true, scope: type, filterValue: value || 'Global', data };
   }

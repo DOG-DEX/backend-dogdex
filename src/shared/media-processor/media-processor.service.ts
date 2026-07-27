@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import sharp from 'sharp';
 import { spawnSync } from 'child_process';
 import fs from 'fs';
-import { logger } from '../../utils/logger.util';
+import { logger } from '../../common/utils/logger.util';
 
 const MAX_IMAGE_DIMENSION = 1024;
 const VIDEO_PREPROCESS_ENABLED = process.env.VIDEO_PREPROCESS_ENABLED !== '0';

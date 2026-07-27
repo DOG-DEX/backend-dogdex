@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
-import { uploadQueue } from '../../../utils/UploadQueue.util';
-import { predictionQueue } from '../../../utils/PredictionQueue.util';
+import { uploadQueue } from '../../../common/utils/UploadQueue.util';
+import { predictionQueue } from '../../../common/utils/PredictionQueue.util';
 
 @Injectable()
 export class PredictionQueueService {

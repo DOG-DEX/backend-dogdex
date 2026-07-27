@@ -4,7 +4,7 @@ import { Model, Types, ClientSession } from 'mongoose';
 import { AIModelDoc } from '../schemas/ai_models.model';
 import { PredictionHistoryDoc } from '../schemas/prediction_history.model';
 import { uploadFile } from '@huggingface/hub';
-import { logger } from '../../../utils/logger.util';
+import { logger } from '../../../common/utils/logger.util';
 
 @Injectable()
 export class AIModelService {

@@ -1,5 +1,5 @@
 import mongoose, { Schema, Document } from 'mongoose';
-import { logger } from '../../../utils/logger.util';
+import { logger } from '../../../common/utils/logger.util';
 
 export interface DogBreedWikiDoc extends Document {
   slug: string; // Key chính, ví dụ: "boxer"  

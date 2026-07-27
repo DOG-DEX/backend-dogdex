@@ -2,8 +2,8 @@ import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { DogService } from './services/dog.service';
 import { DogsWikiService } from './services/dog-wiki.service';
-import { BffDogController } from './controllers/dog.controller';
-import { BffDogsWikiController } from './controllers/dog-wiki.controller';
+import { DogController } from './controllers/dog.controller';
+import { DogWikiController } from './controllers/dog-wiki.controller';
 
 import { DogProfile } from './schemas/dog_profile.model';
 import { HealthRecord } from './schemas/health_record.model';
@@ -25,7 +25,7 @@ import { CommunityPost } from '../community/schemas/community_post.model';
       { name: 'CommunityPost', schema: CommunityPost.schema },
     ])
   ],
-  controllers: [BffDogController, BffDogsWikiController],
+  controllers: [DogController, DogWikiController],
   providers: [DogService, DogsWikiService],
   exports: [DogService, DogsWikiService],
 })

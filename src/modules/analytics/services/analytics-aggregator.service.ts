@@ -3,7 +3,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { AnalyticsEventDoc } from '../schemas/analytics_event.model';
 import { AnalyticsSummaryDoc } from '../schemas/analytics_summary.model';
-import { logger } from '../../../utils/logger.util';
+import { logger } from '../../../common/utils/logger.util';
 
 @Injectable()
 export class AnalyticsAggregatorService {

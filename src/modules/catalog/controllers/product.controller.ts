@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Delete, Param, Body, Query } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Param, Body, Query, ParseIntPipe, DefaultValuePipe } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { ProductService } from '../services/product.service';
 import { Public } from '../../../common/decorators/public.decorator';
@@ -10,8 +10,12 @@ export class ProductController {
 
   @Public()
   @Get()
-  findAll(@Query('page') page = 1, @Query('limit') limit = 20, @Query('category') category?: string) {
-    return this.productService.findAll(+page, +limit, category);
+  findAll(
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+    @Query('limit', new DefaultValuePipe(20), ParseIntPipe) limit: number,
+    @Query('category') category?: string,
+  ) {
+    return this.productService.findAll(page, limit, category);
   }
 
   @Public()

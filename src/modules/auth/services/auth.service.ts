@@ -7,6 +7,7 @@ import * as crypto from 'crypto';
 
 import { RegisterDto } from '../dto/auth.dto';
 import { MailerClient } from '../../../clients/mailer.client';
+import { MailService } from '../../../shared/mail/mail.service';
 import { UserService, EnrichedUser } from '../../users/services/user.service';
 import { UserDoc } from '../../users/schemas/user.model';
 import { RefreshTokenDoc } from '../schemas/refreshToken.model';
@@ -22,6 +23,7 @@ export class AuthService {
     @InjectModel('RefreshToken') private refreshTokenModel: Model<RefreshTokenDoc>,
     @InjectModel('Otp') private otpModel: Model<OtpDoc>,
     private mailerClient: MailerClient,
+    private mailService: MailService,
     private configService: ConfigService,
     private jwtService: JwtService,
   ) {}
@@ -157,7 +159,7 @@ export class AuthService {
       expiresAt: new Date(Date.now() + 10 * 60 * 1000)
     }).save();
 
-    await this.mailerClient.sendEmail(email, 'Password Reset', `Your OTP is ${otp}`);
+    await this.mailService.sendPasswordResetOtp({ to: email, otp, userName: user.username });
     return { message: 'If the account exists, an OTP will be sent' };
   }
 

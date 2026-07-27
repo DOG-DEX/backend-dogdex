@@ -2,6 +2,7 @@ import { Injectable, Logger, NotFoundException, BadRequestException, ConflictExc
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import * as bcrypt from 'bcrypt';
+import * as crypto from 'crypto';
 import { UserDoc } from '../schemas/user.model';
 import { PlanDoc } from '../../payment/schemas/plan.model';
 import { OtpDoc, OtpType } from '../../auth/schemas/otp.model';
@@ -86,32 +87,26 @@ export class UserService {
 
   async createUser(data: RegisterDto): Promise<EnrichedUser> {
     this.logger.log('Creating new user');
-    const existingEmail = await this.userModel.findOne({ email: data.email });
-    const existingUsername = await this.userModel.findOne({ username: data.username });
+    const cleanEmail = data.email.trim().toLowerCase();
+    const cleanUsername = data.username.trim().toLowerCase();
 
-    const freePlan = await this.planModel.findOne({ slug: 'free' }).lean();
-    
+    const existingEmail = await this.userModel.findOne({ email: cleanEmail });
     if (existingEmail) {
-      if (existingEmail.verify) throw new BadRequestException('Email already registered');
-      if (existingUsername && String(existingUsername._id) !== String(existingEmail._id)) {
-        throw new BadRequestException('Username taken by someone else');
+      if (existingEmail.verify) {
+        throw new ConflictException('Email already registered');
       }
-
-      existingEmail.username = data.username;
-      existingEmail.password = await bcrypt.hash(data.password, 10);
-      await existingEmail.save();
-      await this.sendOtp(existingEmail.email);
-      
-      const enriched = await this.enrich(existingEmail);
-      delete (enriched as any).password;
-      return enriched!;
+      throw new BadRequestException('Email registered but not verified. Please verify your email or request a new OTP.');
     }
 
+    const existingUsername = await this.userModel.findOne({ username: cleanUsername });
     if (existingUsername) throw new BadRequestException('Username taken');
 
+    const freePlan = await this.planModel.findOne({ slug: 'free' }).lean();
     const hashedPassword = await bcrypt.hash(data.password, 10);
     const user = new this.userModel({
       ...data,
+      email: cleanEmail,
+      username: cleanUsername,
       password: hashedPassword,
       plan: 'free',
       remainingTokens: (freePlan as any)?.tokenAllotment || 10,
@@ -136,22 +131,36 @@ export class UserService {
   }
 
   async sendOtp(email: string) {
-    const user = await this.userModel.findOne({ email });
+    const cleanEmail = email.trim().toLowerCase();
+    const user = await this.userModel.findOne({ email: cleanEmail });
     if (!user) throw new NotFoundException('User not found');
-    if (user.verify) throw new BadRequestException('Already verified');
+    if (user.verify) throw new BadRequestException('Account is already verified');
 
-    const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
-    await this.otpModel.deleteMany({ email, type: OtpType.EMAIL_VERIFICATION });
-    
+    const lastOtp = await this.otpModel.findOne({
+      email: cleanEmail,
+      type: OtpType.EMAIL_VERIFICATION,
+    }).sort({ createdAt: -1 });
+
+    if (lastOtp && (lastOtp as any).createdAt) {
+      const timePassedSec = Math.floor((Date.now() - new Date((lastOtp as any).createdAt).getTime()) / 1000);
+      const cooldownSec = 60;
+      if (timePassedSec < cooldownSec) {
+        throw new BadRequestException(`Please wait ${cooldownSec - timePassedSec} seconds before requesting a new OTP.`);
+      }
+    }
+
+    const otpCode = crypto.randomInt(100000, 999999).toString();
+    await this.otpModel.deleteMany({ email: cleanEmail, type: OtpType.EMAIL_VERIFICATION });
+
     await new this.otpModel({
-      email,
+      email: cleanEmail,
       otp: otpCode,
       type: OtpType.EMAIL_VERIFICATION,
-      expiresAt: new Date(Date.now() + 10 * 60 * 1000)
+      expiresAt: new Date(Date.now() + 10 * 60 * 1000),
     }).save();
 
-    await this.mailService.sendVerificationOtp({ to: email, otp: otpCode, userName: user.username });
-    return { message: 'OTP sent' };
+    await this.mailService.sendVerificationOtp({ to: cleanEmail, otp: otpCode, userName: user.username });
+    return { message: 'OTP sent successfully' };
   }
 
   async deleteUser(id: string) {

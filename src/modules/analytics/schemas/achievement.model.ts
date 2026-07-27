@@ -1,5 +1,5 @@
 // Achievement model
-import { Schema, model, Document } from 'mongoose';
+import mongoose, { Schema, model, Document } from 'mongoose';
 
 // Schema con cho các trường đa ngôn ngữ
 const i18nStringSchema = new Schema({
@@ -52,4 +52,5 @@ const AchievementSchema = new Schema<IAchievement>({
   }
 });
 
-export default model<IAchievement>('Achievement', AchievementSchema);
+export default (mongoose.models.Achievement as mongoose.Model<IAchievement>) ||
+  model<IAchievement>('Achievement', AchievementSchema);

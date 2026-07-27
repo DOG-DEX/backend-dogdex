@@ -44,4 +44,6 @@ export const AchievementSchema = new Schema<AchievementDoc>(
   },
 );
 
-export const AchievementModel = mongoose.model<AchievementDoc>('Achievement', AchievementSchema);
+export const AchievementModel =
+  (mongoose.models.Achievement as mongoose.Model<AchievementDoc>) ||
+  mongoose.model<AchievementDoc>('Achievement', AchievementSchema);

@@ -41,16 +41,24 @@ export interface UploadJobData {
 }
 
 export const uploadQueue = new Queue<UploadJobData>('upload-queue', {
-  connection: new IORedis(process.env.REDIS_URL || 'redis://localhost:6379', redisConfig),
+  connection: new IORedis(
+    process.env.REDIS_URL || 'redis://localhost:6379',
+    redisConfig,
+  ),
 });
 
 const worker = new Worker<UploadJobData>(
   'upload-queue',
   async (job: Job<UploadJobData>) => {
-    logger.info(`[UploadWorker] Processing job ${job.id} for prediction ${job.data.predictionId}`);
+    logger.info(
+      `[UploadWorker] Processing job ${job.id} for prediction ${job.data.predictionId}`,
+    );
   },
   {
-    connection: new IORedis(process.env.REDIS_URL || 'redis://localhost:6379', redisConfig),
+    connection: new IORedis(
+      process.env.REDIS_URL || 'redis://localhost:6379',
+      redisConfig,
+    ),
     concurrency: 2,
   },
 );
@@ -60,7 +68,9 @@ worker.on('error', (err) => {
 });
 
 worker.on('ready', () => {
-  logger.info(`[UploadWorker] Worker is ready and listening on queue 'upload-queue'`);
+  logger.info(
+    `[UploadWorker] Worker is ready and listening on queue 'upload-queue'`,
+  );
 });
 
 worker.on('completed', (job) => {

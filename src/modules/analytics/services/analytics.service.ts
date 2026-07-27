@@ -14,10 +14,13 @@ export interface TrackEventArgs {
 @Injectable()
 export class AnalyticsService {
   constructor(
-    @InjectModel('AnalyticsEvent') private analyticsEventModel: Model<AnalyticsEventDoc>
+    @InjectModel('AnalyticsEvent')
+    private analyticsEventModel: Model<AnalyticsEventDoc>,
   ) {}
 
-  public async trackEvent(args: TrackEventArgs & { processingTime?: number }): Promise<void> {
+  public async trackEvent(
+    args: TrackEventArgs & { processingTime?: number },
+  ): Promise<void> {
     const { eventName, req, eventData, processingTime } = args;
     try {
       const today = new Date();
@@ -26,25 +29,27 @@ export class AnalyticsService {
         eventName,
         date: today,
       };
-      
+
       const user = (req as any).user;
       if (user?._id) {
         query.user = user._id;
       } else if ((req as any).fingerprint?.hash) {
         query.fingerprint = (req as any).fingerprint.hash;
       } else {
-        logger.warn(`[AnalyticsService] Could not track event '${eventName}' due to missing identifier.`);
+        logger.warn(
+          `[AnalyticsService] Could not track event '${eventName}' due to missing identifier.`,
+        );
         return;
       }
 
       const update = {
         $inc: {
           count: 1,
-          totalProcessingTime: processingTime || 0
+          totalProcessingTime: processingTime || 0,
         },
         $setOnInsert: {
           ip: req.ip,
-          userAgent: req.headers["user-agent"],
+          userAgent: req.headers['user-agent'],
           eventData: eventData || {},
         },
       };

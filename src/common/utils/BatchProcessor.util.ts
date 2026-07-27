@@ -48,7 +48,12 @@ export class BatchProcessor extends EventEmitter {
 
   constructor() {
     super();
-    const options = { connection: new IORedis(process.env.REDIS_URL || 'redis://localhost:6379', redisConfig) };
+    const options = {
+      connection: new IORedis(
+        process.env.REDIS_URL || 'redis://localhost:6379',
+        redisConfig,
+      ),
+    };
     this.videoQueue = new Queue('video-batch-queue', options);
     this.queueEvents = new QueueEvents('video-batch-queue', options);
 
@@ -65,14 +70,25 @@ export class BatchProcessor extends EventEmitter {
 
     this.videoWorker.on('progress', (job, progress) => {
       if (job) {
-        this.updateProgress(job.id as string, 'processing', progress as number, 'Đang xử lý video...');
+        this.updateProgress(
+          job.id as string,
+          'processing',
+          progress as number,
+          'Đang xử lý video...',
+        );
         predictionNotifier.notify(job.id as string, 'progress', { progress });
       }
     });
 
     this.videoWorker.on('completed', (job, result) => {
       if (job) {
-        this.updateProgress(job.id as string, 'completed', 100, 'Xử lý video hoàn tất', result);
+        this.updateProgress(
+          job.id as string,
+          'completed',
+          100,
+          'Xử lý video hoàn tất',
+          result,
+        );
         predictionNotifier.notify(job.id as string, 'completed', { result });
       }
     });
@@ -80,7 +96,9 @@ export class BatchProcessor extends EventEmitter {
     this.videoWorker.on('failed', (job, err) => {
       if (job) {
         this.updateProgress(job.id as string, 'failed', 0, err.message);
-        predictionNotifier.notify(job.id as string, 'failed', { error: err.message });
+        predictionNotifier.notify(job.id as string, 'failed', {
+          error: err.message,
+        });
       }
     });
   }
@@ -96,6 +114,12 @@ export class BatchProcessor extends EventEmitter {
   }
 
   public getProgress(id: string): PredictionProgress {
-    return this.progressMap.get(id) || { status: 'not_found', progress: 0, message: 'Không tìm thấy tiến trình' };
+    return (
+      this.progressMap.get(id) || {
+        status: 'not_found',
+        progress: 0,
+        message: 'Không tìm thấy tiến trình',
+      }
+    );
   }
 }

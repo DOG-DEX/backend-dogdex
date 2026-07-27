@@ -1,4 +1,4 @@
-import mongoose from "mongoose";
+import mongoose from 'mongoose';
 
 export type DirectoryDoc = mongoose.Document & {
   _id: mongoose.Types.ObjectId;
@@ -10,23 +10,23 @@ export type DirectoryDoc = mongoose.Document & {
 
 const directorySchema = new mongoose.Schema<DirectoryDoc>(
   {
-    name: { type: String, required: [true, "Tên thư mục là bắt buộc"] },
+    name: { type: String, required: [true, 'Tên thư mục là bắt buộc'] },
     parent_id: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Directory",
+      ref: 'Directory',
       default: null,
       index: true,
     },
     creator_id: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
+      ref: 'User',
       required: true,
     },
     isDeleted: { type: Boolean, default: false, select: false },
   },
   {
-    timestamps: { createdAt: "createdAt", updatedAt: "updatedAt" },
-    collection: "directories",
+    timestamps: { createdAt: 'createdAt', updatedAt: 'updatedAt' },
+    collection: 'directories',
     toJSON: {
       virtuals: true,
       transform: (doc: any, ret: any) => {
@@ -44,10 +44,10 @@ const directorySchema = new mongoose.Schema<DirectoryDoc>(
         delete ret.isDeleted;
       },
     },
-  }
+  },
 );
 
 export const DirectoryModel = mongoose.model<DirectoryDoc>(
-  "Directory",
-  directorySchema
+  'Directory',
+  directorySchema,
 );

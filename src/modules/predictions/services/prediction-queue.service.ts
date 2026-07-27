@@ -5,7 +5,9 @@ import { predictionQueue } from '../../../common/utils/PredictionQueue.util';
 @Injectable()
 export class PredictionQueueService {
   async enqueuePrediction(data: any): Promise<void> {
-    await predictionQueue.add('prediction-job', data, { removeOnComplete: true });
+    await predictionQueue.add('prediction-job', data, {
+      removeOnComplete: true,
+    });
   }
 
   async enqueueUpload(data: any): Promise<void> {

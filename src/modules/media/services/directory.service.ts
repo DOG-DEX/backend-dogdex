@@ -8,15 +8,33 @@ import { MediaDoc } from '../schemas/medias.model';
 export class DirectoryService {
   constructor(
     @InjectModel('Directory') private directoryModel: Model<DirectoryDoc>,
-    @InjectModel('Media') private mediaModel: Model<MediaDoc>
+    @InjectModel('Media') private mediaModel: Model<MediaDoc>,
   ) {}
 
-  async create(data: { name: string; parent_id: string | null }, creator_id: string): Promise<DirectoryDoc> {
-    const newDirectory = new this.directoryModel({ ...data, creator_id: new Types.ObjectId(creator_id) });
+  async create(
+    data: { name: string; parent_id: string | null },
+    creator_id: string,
+  ): Promise<DirectoryDoc> {
+    if (data.parent_id) {
+      const parent = await this.directoryModel.findOne({
+        _id: data.parent_id,
+        creator_id,
+        isDeleted: false,
+      });
+      if (!parent) throw new NotFoundException('Parent directory not found');
+    }
+    const newDirectory = new this.directoryModel({
+      ...data,
+      creator_id: new Types.ObjectId(creator_id),
+    });
     return newDirectory.save();
   }
 
-  async ensureDirectory(name: string, parent_id: string | null, creator_id: string): Promise<DirectoryDoc> {
+  async ensureDirectory(
+    name: string,
+    parent_id: string | null,
+    creator_id: string,
+  ): Promise<DirectoryDoc> {
     const existingDir = await this.directoryModel.findOne({
       name,
       parent_id,
@@ -40,14 +58,19 @@ export class DirectoryService {
     return this.directoryModel.findOne({ _id: id, isDeleted: false });
   }
 
-  async getChildren(parent_id: string | null): Promise<DirectoryDoc[]> {
-    return this.directoryModel.find({ parent_id, isDeleted: false }).sort({ name: "asc" });
+  async getChildren(
+    creatorId: string,
+    parent_id: string | null,
+  ): Promise<DirectoryDoc[]> {
+    return this.directoryModel
+      .find({ creator_id: creatorId, parent_id, isDeleted: false })
+      .sort({ name: 'asc' });
   }
 
   async softDeleteRecursive(directoryId: string): Promise<void> {
     await this.mediaModel.updateMany(
       { directory_id: directoryId, isDeleted: false },
-      { $set: { isDeleted: true } }
+      { $set: { isDeleted: true } },
     );
 
     const subDirectories = await this.directoryModel.find({
@@ -58,8 +81,8 @@ export class DirectoryService {
     if (subDirectories.length > 0) {
       await Promise.all(
         subDirectories.map((subDir) =>
-          this.softDeleteRecursive((subDir._id as any).toString())
-        )
+          this.softDeleteRecursive((subDir._id as any).toString()),
+        ),
       );
     }
 
@@ -73,14 +96,18 @@ export class DirectoryService {
     let currentId: string | null = directoryId;
 
     while (currentId) {
-      const directory = await this.directoryModel.findOne({
-        _id: currentId,
-        isDeleted: false,
-      }).select("_id name parent_id");
+      const directory = await this.directoryModel
+        .findOne({
+          _id: currentId,
+          isDeleted: false,
+        })
+        .select('_id name parent_id');
 
       if (directory) {
         breadcrumb.unshift(directory);
-        currentId = directory.parent_id ? (directory.parent_id as string) : null;
+        currentId = directory.parent_id
+          ? (directory.parent_id as string)
+          : null;
       } else {
         break;
       }
@@ -88,23 +115,29 @@ export class DirectoryService {
     return breadcrumb;
   }
 
-  async rename(directoryId: string, name: string): Promise<DirectoryDoc | null> {
+  async rename(
+    directoryId: string,
+    name: string,
+  ): Promise<DirectoryDoc | null> {
     return this.directoryModel.findOneAndUpdate(
       { _id: directoryId, isDeleted: false },
       { name },
-      { new: true }
+      { new: true },
     );
   }
 
-  async move(directoryId: string, parent_id: string | null): Promise<DirectoryDoc | null> {
+  async move(
+    directoryId: string,
+    parent_id: string | null,
+  ): Promise<DirectoryDoc | null> {
     return this.directoryModel.findOneAndUpdate(
       { _id: directoryId, isDeleted: false },
       { parent_id },
-      { new: true }
+      { new: true },
     );
   }
 
   async getAll(): Promise<DirectoryDoc[]> {
-    return this.directoryModel.find({ isDeleted: false }).sort({ name: "asc" });
+    return this.directoryModel.find({ isDeleted: false }).sort({ name: 'asc' });
   }
 }

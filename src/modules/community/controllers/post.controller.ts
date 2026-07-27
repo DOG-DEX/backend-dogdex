@@ -33,7 +33,9 @@ export class PostController {
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
   @Post()
-  @ApiOperation({ summary: 'Create a new community post (lost dog / found dog / general)' })
+  @ApiOperation({
+    summary: 'Create a new community post (lost dog / found dog / general)',
+  })
   async createPost(
     @Req() req: Request,
     @CurrentUser('userId') authorId: string,
@@ -47,7 +49,9 @@ export class PostController {
 
   @Public()
   @Get()
-  @ApiOperation({ summary: 'Get community posts with search, breed, and location filters' })
+  @ApiOperation({
+    summary: 'Get community posts with search, breed, and location filters',
+  })
   async getPosts(
     @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
     @Query('limit', new DefaultValuePipe(20), ParseIntPipe) limit: number,
@@ -56,7 +60,11 @@ export class PostController {
     @Query('color') color?: string,
     @Query('status') status?: any,
   ) {
-    return this.postService.getPosts({ type, breed, color, status }, page, limit);
+    return this.postService.getPosts(
+      { type, breed, color, status },
+      page,
+      limit,
+    );
   }
 
   @Public()
@@ -92,7 +100,9 @@ export class PostController {
 
   @Public()
   @Get('radar/matches')
-  @ApiOperation({ summary: 'Find AI matching lost or found dog posts by location and breed' })
+  @ApiOperation({
+    summary: 'Find AI matching lost or found dog posts by location and breed',
+  })
   async findMatches(
     @Query('lat') lat: number,
     @Query('lng') lng: number,

@@ -11,10 +11,10 @@ import { DirectoryModel } from './schemas/directory.model';
     MongooseModule.forFeature([
       { name: 'Media', schema: MediaModel.schema },
       { name: 'Directory', schema: DirectoryModel.schema },
-    ])
+    ]),
   ],
   controllers: [MediaController],
   providers: [MediaService, DirectoryService],
-  exports: [MediaService, DirectoryService]
+  exports: [MediaService, DirectoryService],
 })
 export class MediaModule {}

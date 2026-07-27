@@ -29,4 +29,7 @@ const productSchema = new Schema<ProductDoc>(
 
 productSchema.index({ category: 1, isActive: 1 });
 
-export const ProductModel = mongoose.model<ProductDoc>('Product', productSchema);
+export const ProductModel = mongoose.model<ProductDoc>(
+  'Product',
+  productSchema,
+);

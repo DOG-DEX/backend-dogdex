@@ -2,7 +2,10 @@ import { HttpException, HttpStatus } from '@nestjs/common';
 
 /** Base domain exception */
 export class AppException extends HttpException {
-  constructor(message: string, status: HttpStatus = HttpStatus.INTERNAL_SERVER_ERROR) {
+  constructor(
+    message: string,
+    status: HttpStatus = HttpStatus.INTERNAL_SERVER_ERROR,
+  ) {
     super({ message, error: HttpStatus[status] }, status);
   }
 }

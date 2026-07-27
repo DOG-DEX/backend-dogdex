@@ -1,4 +1,8 @@
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { MediaDoc } from '../schemas/medias.model';
@@ -22,7 +26,7 @@ export interface FindMediasOptions {
 export class MediaService {
   constructor(
     @InjectModel('Media') private mediaModel: Model<MediaDoc>,
-    @InjectModel('Directory') private directoryModel: Model<DirectoryDoc>
+    @InjectModel('Directory') private directoryModel: Model<DirectoryDoc>,
   ) {}
 
   async createMedia(mediaData: any): Promise<MediaDoc> {
@@ -33,25 +37,49 @@ export class MediaService {
     return this.mediaModel.findOneAndUpdate(
       { _id, isDeleted: false },
       { $set: data },
-      { new: true }
+      { new: true },
     );
   }
 
-  async softDeleteMedia(_id: string): Promise<MediaDoc | null> {
+  async softDeleteMedia(
+    _id: string,
+    creatorId: string,
+  ): Promise<MediaDoc | null> {
     const media = await this.mediaModel.findOneAndUpdate(
-      { _id, isDeleted: false },
+      { _id, creator_id: creatorId, isDeleted: false },
       { isDeleted: true },
-      { new: true }
+      { new: true },
     );
     return media;
   }
 
-  async moveMedia(mediaId: string, newDirectoryId: string | null): Promise<MediaDoc | null> {
-    const media = await this.mediaModel.findById(mediaId);
+  async moveMedia(
+    mediaId: string,
+    creatorId: string,
+    newDirectoryId: string | null,
+  ): Promise<MediaDoc | null> {
+    const media = await this.mediaModel.findOne({
+      _id: mediaId,
+      creator_id: creatorId,
+      isDeleted: false,
+    });
     if (!media) return null;
 
+    if (newDirectoryId) {
+      const directory = await this.directoryModel.findOne({
+        _id: newDirectoryId,
+        creator_id: creatorId,
+        isDeleted: false,
+      });
+      if (!directory) {
+        throw new NotFoundException('Destination directory not found');
+      }
+    }
+
     const oldPublicIdWithExt = media.mediaPath;
-    const oldPublicId = oldPublicIdWithExt.substring(0, oldPublicIdWithExt.lastIndexOf('.')) || oldPublicIdWithExt;
+    const oldPublicId =
+      oldPublicIdWithExt.substring(0, oldPublicIdWithExt.lastIndexOf('.')) ||
+      oldPublicIdWithExt;
     const fileExtension = path.extname(oldPublicIdWithExt);
     const fileName = path.basename(oldPublicId);
 
@@ -72,19 +100,30 @@ export class MediaService {
 
     if (oldPublicId !== newPublicId) {
       try {
-        logger.info(`[Media Service] Moving Cloudinary resource from '${oldPublicId}' to '${newPublicId}'`);
-        const renameResult = await cloudinary.uploader.rename(oldPublicId, newPublicId, { overwrite: true });
-        
+        logger.info(
+          `[Media Service] Moving Cloudinary resource from '${oldPublicId}' to '${newPublicId}'`,
+        );
+        const renameResult = await cloudinary.uploader.rename(
+          oldPublicId,
+          newPublicId,
+          { overwrite: true },
+        );
+
         await cloudinary.uploader.explicit(renameResult.public_id, {
           type: 'upload',
-          asset_folder: newFolderPath
+          asset_folder: newFolderPath,
         });
       } catch (error: any) {
         if (error.http_code !== 422) {
-          logger.error(`[Media Service] Failed to move Cloudinary file:`, error.message);
+          logger.error(
+            `[Media Service] Failed to move Cloudinary file:`,
+            error.message,
+          );
           throw error;
         }
-        logger.warn(`[Media Service] Destination '${newPublicId}' already exists.`);
+        logger.warn(
+          `[Media Service] Destination '${newPublicId}' already exists.`,
+        );
       }
     }
 
@@ -92,32 +131,50 @@ export class MediaService {
     media.mediaPath = `${newPublicId}${fileExtension}`;
     return media.save();
   }
-  
-  async findAndPaginate(options: FindMediasOptions): Promise<{ data: MediaDoc[]; pagination: any }> {
-    const { page = 1, limit = 50, search, type, directory_id, startDate, endDate } = options;
 
-    const filter: any = { isDeleted: false };
+  async findAndPaginate(
+    creatorId: string,
+    options: FindMediasOptions,
+  ): Promise<{ data: MediaDoc[]; pagination: any }> {
+    const {
+      page = 1,
+      limit = 50,
+      search,
+      type,
+      directory_id,
+      startDate,
+      endDate,
+    } = options;
+
+    const filter: any = { creator_id: creatorId, isDeleted: false };
     if (directory_id !== undefined) filter.directory_id = directory_id;
-    if (search) filter.name = new RegExp(search, "i");
-    if (type) filter.type = new RegExp(`^${type}/`, "i");
+    if (search) filter.name = new RegExp(search, 'i');
+    if (type) filter.type = new RegExp(`^${type}/`, 'i');
 
     if (startDate || endDate) {
       filter.createdAt = {};
       if (startDate) {
         const start = new Date(`${startDate}T00:00:00.000Z`);
         if (!isNaN(start.getTime())) filter.createdAt.$gte = start;
-        else throw new BadRequestException("Invalid startDate format. Expected format: YYYY-MM-DD");
+        else
+          throw new BadRequestException(
+            'Invalid startDate format. Expected format: YYYY-MM-DD',
+          );
       }
       if (endDate) {
         const end = new Date(`${endDate}T23:59:59.999Z`);
         if (!isNaN(end.getTime())) filter.createdAt.$lt = end;
-        else throw new BadRequestException("Invalid endDate format. Expected format: YYYY-MM-DD");
+        else
+          throw new BadRequestException(
+            'Invalid endDate format. Expected format: YYYY-MM-DD',
+          );
       }
     }
     const sortOptions: any = { createdAt: -1 };
     const [totalItems, data] = await Promise.all([
       this.mediaModel.countDocuments(filter),
-      this.mediaModel.find(filter)
+      this.mediaModel
+        .find(filter)
         .sort(sortOptions)
         .skip((page - 1) * limit)
         .limit(limit),
@@ -134,7 +191,7 @@ export class MediaService {
   }
 
   async getFileTypeFolders(): Promise<string[]> {
-    const UPLOADS_DIR = path.join(process.cwd(), "uploads");
+    const UPLOADS_DIR = path.join(process.cwd(), 'uploads');
     try {
       const entries = await fs.readdir(UPLOADS_DIR, { withFileTypes: true });
       return entries.filter((e) => e.isDirectory()).map((d) => d.name);
@@ -144,7 +201,7 @@ export class MediaService {
   }
 
   async getYearFolders(fileType: string): Promise<string[]> {
-    const typePath = path.join(process.cwd(), "uploads", fileType);
+    const typePath = path.join(process.cwd(), 'uploads', fileType);
     try {
       const entries = await fs.readdir(typePath, { withFileTypes: true });
       return entries
@@ -157,7 +214,7 @@ export class MediaService {
   }
 
   async getMonthFolders(fileType: string, year: string): Promise<string[]> {
-    const yearPath = path.join(process.cwd(), "uploads", fileType, year);
+    const yearPath = path.join(process.cwd(), 'uploads', fileType, year);
     try {
       const entries = await fs.readdir(yearPath, { withFileTypes: true });
       return entries
@@ -169,10 +226,18 @@ export class MediaService {
     }
   }
 
-  async findAndPaginateByPhysicalPath(fileType: string, year: string, month: string, options: { page?: number; limit?: number; search?: string }): Promise<{ data: MediaDoc[]; pagination: any }> {
+  async findAndPaginateByPhysicalPath(
+    fileType: string,
+    year: string,
+    month: string,
+    options: { page?: number; limit?: number; search?: string },
+  ): Promise<{ data: MediaDoc[]; pagination: any }> {
     const { page = 1, limit = 50, search } = options;
 
-    const pathRegex = new RegExp(`^uploads(\\\\|/)${fileType}(\\\\|/)${year}(\\\\|/)${month}(\\\\|/)`, "i");
+    const pathRegex = new RegExp(
+      `^uploads(\\\\|/)${fileType}(\\\\|/)${year}(\\\\|/)${month}(\\\\|/)`,
+      'i',
+    );
 
     const filter: any = {
       isDeleted: false,
@@ -180,14 +245,15 @@ export class MediaService {
     };
 
     if (search) {
-      filter.name = new RegExp(search, "i");
+      filter.name = new RegExp(search, 'i');
     }
 
     const sortOptions: any = { createdAt: -1 };
 
     const [totalItems, data] = await Promise.all([
       this.mediaModel.countDocuments(filter),
-      this.mediaModel.find(filter)
+      this.mediaModel
+        .find(filter)
         .sort(sortOptions)
         .skip((page - 1) * limit)
         .limit(limit),

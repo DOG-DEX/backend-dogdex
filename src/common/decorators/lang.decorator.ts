@@ -11,7 +11,9 @@ export const Lang = createParamDecorator(
       return queryLang;
     }
 
-    const headerLang = request.headers?.['accept-language']?.split(',')[0]?.toLowerCase();
+    const headerLang = request.headers?.['accept-language']
+      ?.split(',')[0]
+      ?.toLowerCase();
     if (headerLang?.startsWith('vi')) {
       return 'vi';
     } else if (headerLang?.startsWith('en')) {

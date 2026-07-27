@@ -10,7 +10,10 @@ import { AnalyticsSummaryModel } from './schemas/analytics_summary.model';
 import AchievementModel from './schemas/achievement.model';
 import { UserCollectionModel } from '../users/schemas/user_collection.model';
 import { UserModel } from '../users/schemas/user.model';
-import { DogBreedWikiModel, DogBreedWikiViModel } from '../dogs/schemas/dogs_wiki.model';
+import {
+  DogBreedWikiModel,
+  DogBreedWikiViModel,
+} from '../dogs/schemas/dogs_wiki.model';
 
 @Module({
   imports: [
@@ -25,7 +28,17 @@ import { DogBreedWikiModel, DogBreedWikiViModel } from '../dogs/schemas/dogs_wik
     ]),
   ],
   controllers: [AnalyticsController],
-  providers: [AnalyticsService, AnalyticsAggregatorService, AchievementService, LeaderboardService],
-  exports: [AnalyticsService, AnalyticsAggregatorService, AchievementService, LeaderboardService],
+  providers: [
+    AnalyticsService,
+    AnalyticsAggregatorService,
+    AchievementService,
+    LeaderboardService,
+  ],
+  exports: [
+    AnalyticsService,
+    AnalyticsAggregatorService,
+    AchievementService,
+    LeaderboardService,
+  ],
 })
 export class AnalyticsModule {}

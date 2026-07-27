@@ -8,13 +8,23 @@ import { logger } from '../../../common/utils/logger.util';
 export class MomoService {
   constructor(private readonly config: ConfigService) {}
 
-  async createPaymentRequest(amount: number, orderInfo: string, orderId: string, requestId: string): Promise<any> {
+  async createPaymentRequest(
+    amount: number,
+    orderInfo: string,
+    orderId: string,
+    requestId: string,
+  ): Promise<any> {
     const partnerCode = this.config.get<string>('MOMO_PARTNER_CODE') || 'MOMO';
     const accessKey = this.config.get<string>('MOMO_ACCESS_KEY') || '';
     const secretKey = this.config.get<string>('MOMO_SECRET_KEY') || '';
-    const hostname = this.config.get<string>('MOMO_HOSTNAME') || 'test-payment.momo.vn';
-    const frontendUrl = (this.config.get<string>('FRONTEND_URL') || 'http://localhost:3001').trim();
-    const backendUrl = (this.config.get<string>('BACKEND_URL') || 'http://localhost:3000').trim();
+    const hostname =
+      this.config.get<string>('MOMO_HOSTNAME') || 'test-payment.momo.vn';
+    const frontendUrl = (
+      this.config.get<string>('FRONTEND_URL') || 'http://localhost:3001'
+    ).trim();
+    const backendUrl = (
+      this.config.get<string>('BACKEND_URL') || 'http://localhost:3000'
+    ).trim();
 
     const redirectUrl = `${frontendUrl}/profile?upgrade_status=true`;
     const ipnUrl = `${backendUrl}/api/plans/momo-ipn`;
@@ -22,7 +32,10 @@ export class MomoService {
     const extraData = '';
 
     const rawSignature = `accessKey=${accessKey}&amount=${amount}&extraData=${extraData}&ipnUrl=${ipnUrl}&orderId=${orderId}&orderInfo=${orderInfo}&partnerCode=${partnerCode}&redirectUrl=${redirectUrl}&requestId=${requestId}&requestType=${requestType}`;
-    const signature = crypto.createHmac('sha256', secretKey).update(rawSignature).digest('hex');
+    const signature = crypto
+      .createHmac('sha256', secretKey)
+      .update(rawSignature)
+      .digest('hex');
 
     const payload = {
       partnerCode,
@@ -41,15 +54,28 @@ export class MomoService {
 
     try {
       const url = `https://${hostname}/v2/gateway/api/create`;
-      const { data } = await axios.post(url, payload, { headers: { 'Content-Type': 'application/json' } });
+      const { data } = await axios.post(url, payload, {
+        headers: { 'Content-Type': 'application/json' },
+      });
       if (data.resultCode !== 0) {
-        logger.error(`[MoMo] Payment creation error (${data.resultCode}): ${data.message}`);
-        throw new BadRequestException(data.message || 'Thanh toán MoMo thất bại.');
+        logger.error(
+          `[MoMo] Payment creation error (${data.resultCode}): ${data.message}`,
+        );
+        throw new BadRequestException(
+          data.message || 'Thanh toán MoMo thất bại.',
+        );
       }
       return data;
     } catch (error: any) {
-      logger.error('[MoMo] Error creating payment request:', error?.response?.data || error.message);
-      throw new BadRequestException(error?.response?.data?.message || error.message || 'Lỗi kết nối cổng thanh toán MoMo.');
+      logger.error(
+        '[MoMo] Error creating payment request:',
+        error?.response?.data || error.message,
+      );
+      throw new BadRequestException(
+        error?.response?.data?.message ||
+          error.message ||
+          'Lỗi kết nối cổng thanh toán MoMo.',
+      );
     }
   }
 
@@ -59,11 +85,33 @@ export class MomoService {
 
     const accessKey = this.config.get<string>('MOMO_ACCESS_KEY') || '';
     const secretKey = this.config.get<string>('MOMO_SECRET_KEY') || '';
+    if (!accessKey || !secretKey) return false;
 
-    const { partnerCode, orderId, requestId, amount, orderInfo, orderType, transId, resultCode, message, payType, responseTime, extraData } = rest;
+    const {
+      partnerCode,
+      orderId,
+      requestId,
+      amount,
+      orderInfo,
+      orderType,
+      transId,
+      resultCode,
+      message,
+      payType,
+      responseTime,
+      extraData,
+    } = rest;
     const rawSignature = `accessKey=${accessKey}&amount=${amount}&extraData=${extraData}&message=${message}&orderId=${orderId}&orderInfo=${orderInfo}&orderType=${orderType}&partnerCode=${partnerCode}&payType=${payType}&requestId=${requestId}&responseTime=${responseTime}&resultCode=${resultCode}&transId=${transId}`;
 
-    const expected = crypto.createHmac('sha256', secretKey).update(rawSignature).digest('hex');
-    return signature === expected;
+    const expected = crypto
+      .createHmac('sha256', secretKey)
+      .update(rawSignature)
+      .digest('hex');
+    const receivedBuffer = Buffer.from(signature, 'utf8');
+    const expectedBuffer = Buffer.from(expected, 'utf8');
+    return (
+      receivedBuffer.length === expectedBuffer.length &&
+      crypto.timingSafeEqual(receivedBuffer, expectedBuffer)
+    );
   }
 }

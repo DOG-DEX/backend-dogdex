@@ -18,7 +18,12 @@ const petSchema = new Schema<PetDoc>(
     name: { type: String, required: true, trim: true },
     breed: { type: String },
     age: { type: Number },
-    owner: { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
+    owner: {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
+      index: true,
+    },
     qrCode: { type: String, unique: true, sparse: true },
     photos: [{ type: String }],
     linkedProducts: [{ type: Schema.Types.ObjectId, ref: 'Product' }],

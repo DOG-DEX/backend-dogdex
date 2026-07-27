@@ -1,4 +1,4 @@
-import mongoose, { Document, Schema, Types } from "mongoose";
+import mongoose, { Document, Schema, Types } from 'mongoose';
 
 export type PlanDoc = Document & {
   _id: Types.ObjectId;
@@ -26,7 +26,12 @@ const planSchema = new Schema<PlanDoc>(
 
     tokenAllotment: { type: Number, required: true, min: 0 },
     dogLimit: { type: Number, required: true, default: 1, min: 1 },
-    healthRecordLimitPerDog: { type: Number, required: true, default: 3, min: 1 },
+    healthRecordLimitPerDog: {
+      type: Number,
+      required: true,
+      default: 3,
+      min: 1,
+    },
 
     apiAccess: { type: Boolean, required: true, default: false },
     isDeleted: {
@@ -36,7 +41,7 @@ const planSchema = new Schema<PlanDoc>(
   },
   {
     timestamps: true,
-    collection: "plans",
+    collection: 'plans',
     toJSON: {
       transform: (doc: any, ret: any) => {
         ret.id = ret._id;
@@ -45,10 +50,7 @@ const planSchema = new Schema<PlanDoc>(
         delete ret.isDeleted;
       },
     },
-  }
+  },
 );
 
-export const PlanModel = mongoose.model<PlanDoc>(
-  "Plan",
-  planSchema
-);
+export const PlanModel = mongoose.model<PlanDoc>('Plan', planSchema);

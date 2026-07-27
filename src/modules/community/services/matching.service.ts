@@ -6,7 +6,8 @@ import { CommunityPostDoc } from '../schemas/community_post.model';
 @Injectable()
 export class MatchingService {
   constructor(
-    @InjectModel('CommunityPost') private communityPostModel: Model<CommunityPostDoc>
+    @InjectModel('CommunityPost')
+    private communityPostModel: Model<CommunityPostDoc>,
   ) {}
 
   async findPotentialMatches(params: {

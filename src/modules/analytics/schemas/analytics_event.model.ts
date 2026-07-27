@@ -1,5 +1,5 @@
-import mongoose, { Schema, Document } from "mongoose";
-import { AnalyticsEventName } from "../../../common/constants/analytics.constants";
+import mongoose, { Schema, Document } from 'mongoose';
+import { AnalyticsEventName } from '../../../common/constants/analytics.constants';
 
 export interface AnalyticsEventDoc extends Document {
   eventName: AnalyticsEventName;
@@ -41,8 +41,8 @@ const analyticsEventSchema = new Schema(
     },
   },
   {
-    timestamps: { createdAt: "createdAt", updatedAt: "updatedAt" },
-    collection: "analyticsevents",
+    timestamps: { createdAt: 'createdAt', updatedAt: 'updatedAt' },
+    collection: 'analyticsevents',
     toJSON: {
       virtuals: true,
       transform(doc: any, ret: any) {
@@ -55,13 +55,13 @@ const analyticsEventSchema = new Schema(
     toObject: {
       virtuals: true,
     },
-  }
+  },
 );
 
 analyticsEventSchema.index({ createdAt: 1 }, { expireAfterSeconds: 7776000 });
 analyticsEventSchema.index({ eventName: 1, date: 1, user: 1, fingerprint: 1 });
 
 export const AnalyticsEventModel = mongoose.model<AnalyticsEventDoc>(
-  "AnalyticsEvent",
-  analyticsEventSchema
+  'AnalyticsEvent',
+  analyticsEventSchema,
 );

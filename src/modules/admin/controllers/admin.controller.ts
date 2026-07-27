@@ -1,4 +1,14 @@
-import { Controller, Get, Patch, Body, Param, Query, UseGuards, ParseIntPipe, DefaultValuePipe } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Patch,
+  Body,
+  Param,
+  Query,
+  UseGuards,
+  ParseIntPipe,
+  DefaultValuePipe,
+} from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 
 import { AdminService } from '../services/admin.service';
@@ -15,7 +25,9 @@ export class AdminController {
   constructor(private readonly adminService: AdminService) {}
 
   @Get('dashboard')
-  @ApiOperation({ summary: 'Get administrative dashboard data & system metrics' })
+  @ApiOperation({
+    summary: 'Get administrative dashboard data & system metrics',
+  })
   async getDashboard() {
     return this.adminService.getDashboardData();
   }

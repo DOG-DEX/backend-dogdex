@@ -26,13 +26,13 @@ const ConfigurationSchema: Schema = new Schema(
     autoCreate: true,
     versionKey: false,
     timestamps: true,
-    collection: 'configurations', 
-  }
+    collection: 'configurations',
+  },
 );
 
 const Configuration = mongoose.model<IConfiguration>(
   'Configuration',
-  ConfigurationSchema
+  ConfigurationSchema,
 );
 
 export default Configuration;

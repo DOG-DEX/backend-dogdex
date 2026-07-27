@@ -1,7 +1,7 @@
-import mongoose, { Document, Schema, Types } from "mongoose";
+import mongoose, { Document, Schema, Types } from 'mongoose';
 
-export type UserRole = "member" | "de" | "admin";
-export type Plan = "free" | "starter" | "professional" | "enterprise";
+export type UserRole = 'member' | 'de' | 'admin';
+export type Plan = 'free' | 'starter' | 'professional' | 'enterprise';
 
 export interface UnlockedAchievement {
   key: string;
@@ -58,7 +58,7 @@ const userSchema = new Schema<UserDoc>(
       unique: true,
       trim: true,
       lowercase: true,
-      match: [/^[a-z0-9_]+$/, "Username không hợp lệ"],
+      match: [/^[a-z0-9_]+$/, 'Username không hợp lệ'],
     },
     email: {
       type: String,
@@ -70,8 +70,8 @@ const userSchema = new Schema<UserDoc>(
     password: { type: String, required: true, select: false, trim: true },
     role: {
       type: String,
-      enum: ["member", "de", "admin"],
-      default: "member",
+      enum: ['member', 'de', 'admin'],
+      default: 'member',
       required: true,
     },
     firstName: { type: String, trim: true },
@@ -87,17 +87,16 @@ const userSchema = new Schema<UserDoc>(
     verify: { type: Boolean, default: false },
     isDeleted: { type: Boolean, default: false, select: false },
 
-
     remainingTokens: {
       type: Number,
       default: 10,
-      min: [0, "Cant have negative tokens"],
+      min: [0, 'Cant have negative tokens'],
     },
     lastUsageResetAt: { type: Date, default: () => new Date() },
     plan: {
       type: String,
-      enum: ["free", "starter", "professional", "enterprise"],
-      default: "free",
+      enum: ['free', 'starter', 'professional', 'enterprise'],
+      default: 'free',
     },
 
     stripeCustomerId: { type: String, unique: true, sparse: true },
@@ -111,8 +110,8 @@ const userSchema = new Schema<UserDoc>(
     ],
   },
   {
-    timestamps: { createdAt: "createdAt", updatedAt: "updatedAt" },
-    collection: "users",
+    timestamps: { createdAt: 'createdAt', updatedAt: 'updatedAt' },
+    collection: 'users',
     toJSON: {
       virtuals: true,
       transform: (doc: any, ret: any) => {
@@ -142,7 +141,7 @@ const userSchema = new Schema<UserDoc>(
         delete ret.isDeleted;
       },
     },
-  }
+  },
 );
 
-export const UserModel = mongoose.model<UserDoc>("User", userSchema);
+export const UserModel = mongoose.model<UserDoc>('User', userSchema);

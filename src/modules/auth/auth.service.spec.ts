@@ -1,12 +1,26 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { AuthService } from './auth.service';
+import { AuthService } from './services/auth.service';
+import { UserService } from '../users/services/user.service';
+import { MailerClient } from '../../clients/mailer.client';
+import { MailService } from '../../shared/mail/mail.service';
+import { ConfigService } from '@nestjs/config';
+import { JwtService } from '@nestjs/jwt';
 
 describe('AuthService', () => {
   let service: AuthService;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [AuthService],
+      providers: [
+        AuthService,
+        { provide: 'RefreshTokenModel', useValue: {} },
+        { provide: 'OtpModel', useValue: {} },
+        { provide: UserService, useValue: {} },
+        { provide: MailerClient, useValue: {} },
+        { provide: MailService, useValue: {} },
+        { provide: ConfigService, useValue: {} },
+        { provide: JwtService, useValue: {} },
+      ],
     }).compile();
 
     service = module.get<AuthService>(AuthService);

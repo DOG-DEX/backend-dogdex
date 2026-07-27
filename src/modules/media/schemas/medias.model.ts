@@ -1,5 +1,5 @@
-import mongoose, { Schema, Document, Types } from "mongoose";
-import { DirectoryDoc } from "./directory.model";
+import mongoose, { Schema, Document, Types } from 'mongoose';
+import { DirectoryDoc } from './directory.model';
 
 export type MediaDoc = mongoose.Document & {
   _id: mongoose.Types.ObjectId;
@@ -18,30 +18,30 @@ const mediaSchema = new mongoose.Schema<MediaDoc>(
   {
     name: {
       type: String,
-      required: [true, "Tên media là bắt buộc"],
+      required: [true, 'Tên media là bắt buộc'],
     },
     mediaPath: {
       type: String,
-      required: [true, "Đường dẫn media là bắt buộc"],
+      required: [true, 'Đường dẫn media là bắt buộc'],
     },
     description: { type: String, default: null },
     type: { type: String, default: null },
     creator_id: {
       type: Schema.Types.ObjectId,
-      ref: "User",
+      ref: 'User',
       required: false,
     },
     directory_id: {
       type: Schema.Types.ObjectId,
-      ref: "Directory",
+      ref: 'Directory',
       required: false,
       index: true,
     },
     isDeleted: { type: Boolean, default: false },
   },
   {
-    timestamps: { createdAt: "createdAt", updatedAt: "updatedAt" },
-    collection: "medias",
+    timestamps: { createdAt: 'createdAt', updatedAt: 'updatedAt' },
+    collection: 'medias',
     toJSON: {
       virtuals: true,
       transform(doc: any, ret: any) {
@@ -66,14 +66,14 @@ const mediaSchema = new mongoose.Schema<MediaDoc>(
         delete ret.isDeleted;
       },
     },
-  }
+  },
 );
 mediaSchema.index(
   { createdAt: 1 },
   {
     expireAfterSeconds: 604800, // 7 ngày = 604800 giây
     partialFilterExpression: { creator_id: { $eq: null } },
-  }
+  },
 );
 
-export const MediaModel = mongoose.model<MediaDoc>("Media", mediaSchema);
+export const MediaModel = mongoose.model<MediaDoc>('Media', mediaSchema);

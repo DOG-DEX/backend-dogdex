@@ -12,10 +12,14 @@ export class GeminiService {
     const apiKey = process.env.GOOGLE_API_KEY;
     if (apiKey) {
       this.genAI = new GoogleGenerativeAI(apiKey);
-      this.model = this.genAI.getGenerativeModel({ model: 'gemini-flash-latest' });
+      this.model = this.genAI.getGenerativeModel({
+        model: 'gemini-flash-latest',
+      });
       this.logger.log('Gemini AI Service initialized successfully.');
     } else {
-      this.logger.warn('GOOGLE_API_KEY not provided. Gemini AI will run in mock mode.');
+      this.logger.warn(
+        'GOOGLE_API_KEY not provided. Gemini AI will run in mock mode.',
+      );
     }
   }
 
@@ -33,7 +37,11 @@ export class GeminiService {
     }
   }
 
-  async chatWithBreed(breedName: string, message: string, lang: 'vi' | 'en' = 'vi'): Promise<string> {
+  async chatWithBreed(
+    breedName: string,
+    message: string,
+    lang: 'vi' | 'en' = 'vi',
+  ): Promise<string> {
     const systemPrompt =
       lang === 'vi'
         ? `Bạn là một chuyên gia về giống chó ${breedName}. Hãy trả lời ngắn gọn, thân thiện và chính xác câu hỏi sau từ người dùng: ${message}`

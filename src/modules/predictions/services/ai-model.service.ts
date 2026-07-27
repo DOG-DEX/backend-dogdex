@@ -1,4 +1,9 @@
-import { Injectable, BadRequestException, NotFoundException, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+  ConflictException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types, ClientSession } from 'mongoose';
 import { AIModelDoc } from '../schemas/ai_models.model';
@@ -10,11 +15,15 @@ import { logger } from '../../../common/utils/logger.util';
 export class AIModelService {
   constructor(
     @InjectModel('AIModel') private aiModelModel: Model<AIModelDoc>,
-    @InjectModel('PredictionHistory') private predictionHistoryModel: Model<PredictionHistoryDoc>
+    @InjectModel('PredictionHistory')
+    private predictionHistoryModel: Model<PredictionHistoryDoc>,
   ) {}
 
   async create(data: any, creator_id: string): Promise<AIModelDoc> {
-    const newModel = new this.aiModelModel({ ...data, creator_id: new Types.ObjectId(creator_id) });
+    const newModel = new this.aiModelModel({
+      ...data,
+      creator_id: new Types.ObjectId(creator_id),
+    });
     return newModel.save();
   }
 
@@ -27,38 +36,45 @@ export class AIModelService {
   }
 
   async findAll(): Promise<any[]> {
-    const models = await this.aiModelModel.find().sort({ createdAt: -1 }).lean();
+    const models = await this.aiModelModel
+      .find()
+      .sort({ createdAt: -1 })
+      .lean();
 
     const stats = await this.predictionHistoryModel.aggregate([
       {
         $group: {
-          _id: "$modelUsed",
-          avgProcessingTime: { $avg: "$processingTime" }
-        }
-      }
+          _id: '$modelUsed',
+          avgProcessingTime: { $avg: '$processingTime' },
+        },
+      },
     ]);
 
-    const statsMap = new Map(stats.map(s => [s._id, s.avgProcessingTime]));
+    const statsMap = new Map(stats.map((s) => [s._id, s.avgProcessingTime]));
 
-    return models.map(model => ({
+    return models.map((model) => ({
       ...model,
       id: model._id.toString(),
-      averageProcessingTime: Math.round(statsMap.get(model.name) || 0)
+      averageProcessingTime: Math.round(statsMap.get(model.name) || 0),
     }));
   }
 
   async findActiveModelForTask(taskType: string): Promise<AIModelDoc | null> {
-    return this.aiModelModel.findOne({
-      taskType: taskType as any,
-      status: "ACTIVE",
-    }).sort({ createdAt: -1 });
+    return this.aiModelModel
+      .findOne({
+        taskType: taskType as any,
+        status: 'ACTIVE',
+      })
+      .sort({ createdAt: -1 });
   }
 
   async activateModel(modelId: string): Promise<AIModelDoc | null> {
     const session: ClientSession = await this.aiModelModel.db.startSession();
     session.startTransaction();
     try {
-      const modelToActivate = await this.aiModelModel.findById(modelId).session(session);
+      const modelToActivate = await this.aiModelModel
+        .findById(modelId)
+        .session(session);
       if (!modelToActivate) {
         await session.endSession();
         return null;
@@ -66,11 +82,11 @@ export class AIModelService {
 
       await this.aiModelModel.updateMany(
         { taskType: modelToActivate.taskType, _id: { $ne: modelId } },
-        { $set: { status: "INACTIVE" } },
-        { session }
+        { $set: { status: 'INACTIVE' } },
+        { session },
       );
 
-      modelToActivate.status = "ACTIVE";
+      modelToActivate.status = 'ACTIVE';
       const savedModel = await modelToActivate.save({ session });
 
       await session.commitTransaction();
@@ -83,16 +99,24 @@ export class AIModelService {
     }
   }
 
-  async uploadAndCreateModel(modelFile: any, data: any, creator_id: string): Promise<AIModelDoc> {
+  async uploadAndCreateModel(
+    modelFile: any,
+    data: any,
+    creator_id: string,
+  ): Promise<AIModelDoc> {
     const hfToken = process.env.HUGGINGFACE_TOKEN;
     const repoId = process.env.HUGGINGFACE_REPO_ID;
 
     if (!hfToken || !repoId) {
-      throw new BadRequestException("Hugging Face token or repository ID is not configured in .env file.");
+      throw new BadRequestException(
+        'Hugging Face token or repository ID is not configured in .env file.',
+      );
     }
 
     try {
-      logger.info(`Uploading model file '${modelFile.originalname}' to Hugging Face repo '${repoId}'...`);
+      logger.info(
+        `Uploading model file '${modelFile.originalname}' to Hugging Face repo '${repoId}'...`,
+      );
       await uploadFile({
         credentials: { accessToken: hfToken },
         repo: { type: 'model', name: repoId },
@@ -101,15 +125,20 @@ export class AIModelService {
           content: new Blob([new Uint8Array(modelFile.buffer)]),
         },
       });
-      logger.info("Model file uploaded successfully.");
+      logger.info('Model file uploaded successfully.');
 
-      const newModel = new this.aiModelModel({ ...data, creator_id: new Types.ObjectId(creator_id), huggingFaceRepo: repoId, status: 'INACTIVE' });
+      const newModel = new this.aiModelModel({
+        ...data,
+        creator_id: new Types.ObjectId(creator_id),
+        huggingFaceRepo: repoId,
+        status: 'INACTIVE',
+      });
       await newModel.save();
       logger.info(`New AI model record created in DB with ID: ${newModel._id}`);
 
       return newModel;
     } catch (error: any) {
-      logger.error("Error during Hugging Face upload or DB creation:", error);
+      logger.error('Error during Hugging Face upload or DB creation:', error);
       throw new BadRequestException(`Failed to upload model: ${error.message}`);
     }
   }

@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, BadRequestException, Inject } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  Inject,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { v4 as uuidv4 } from 'uuid';
@@ -13,48 +18,59 @@ import { logger } from '../../../common/utils/logger.util';
 @Injectable()
 export class SubscriptionService {
   constructor(
-    @InjectModel('Subscription') private subscriptionModel: Model<SubscriptionDoc>,
+    @InjectModel('Subscription')
+    private subscriptionModel: Model<SubscriptionDoc>,
     @InjectModel('Transaction') private transactionModel: Model<TransactionDoc>,
     @InjectModel('User') private userModel: Model<UserDoc>,
     @InjectModel('Plan') private planModel: Model<PlanDoc>,
     private readonly momoService: MomoService,
-    private readonly planService: PlanService
-  ) { }
+    private readonly planService: PlanService,
+  ) {}
 
   async getAvailablePlans(): Promise<any[]> {
     const plans = await this.planService.getPublicPlans();
     if (!plans || plans.length === 0) {
-      throw new NotFoundException("Không tìm thấy gói cước nào.");
+      throw new NotFoundException('Không tìm thấy gói cước nào.');
     }
-    return plans.map(plan => ({
+    return plans.map((plan) => ({
       ...plan.toObject(),
       id: plan._id.toString(),
     }));
   }
 
-  async createCheckoutSession(userId: string, planSlug: string, billingPeriod: "monthly" | "yearly") {
+  async createCheckoutSession(
+    userId: string,
+    planSlug: string,
+    billingPeriod: 'monthly' | 'yearly',
+  ) {
     const [user, plan] = await Promise.all([
       this.userModel.findById(userId),
-      this.planService.getBySlug(planSlug)
+      this.planService.getBySlug(planSlug),
     ]);
 
-    if (!user) throw new NotFoundException("Không tìm thấy người dùng");
-    if (!plan) throw new NotFoundException("Không tìm thấy gói cước");
+    if (!user) throw new NotFoundException('Không tìm thấy người dùng');
+    if (!plan) throw new NotFoundException('Không tìm thấy gói cước');
 
     const currentSubscription = await this.subscriptionModel.findOne({
       userId: user._id,
-      status: { $in: ['active', 'trialing'] }
+      status: { $in: ['active', 'trialing'] },
     });
 
     if (currentSubscription && currentSubscription.planSlug === planSlug) {
       const now = new Date();
       const threeDays = 3 * 24 * 60 * 60 * 1000;
-      if (currentSubscription.currentPeriodEnd.getTime() - now.getTime() > threeDays) {
-        throw new BadRequestException(`Bạn đang sử dụng gói ${plan.name}. Vui lòng chờ đến gần ngày hết hạn để gia hạn.`);
+      if (
+        currentSubscription.currentPeriodEnd.getTime() - now.getTime() >
+        threeDays
+      ) {
+        throw new BadRequestException(
+          `Bạn đang sử dụng gói ${plan.name}. Vui lòng chờ đến gần ngày hết hạn để gia hạn.`,
+        );
       }
     }
 
-    const amount = billingPeriod === "monthly" ? plan.priceMonthly : plan.priceYearly;
+    const amount =
+      billingPeriod === 'monthly' ? plan.priceMonthly : plan.priceYearly;
 
     const orderId = uuidv4();
     const requestId = orderId;
@@ -70,13 +86,26 @@ export class SubscriptionService {
       paymentGateway: 'momo',
       status: 'pending',
     });
-    logger.info(`[Transaction] Created pending transaction ${orderId} for user ${userId}`);
+    logger.info(
+      `[Transaction] Created pending transaction ${orderId} for user ${userId}`,
+    );
 
-    const momoResponse = await this.momoService.createPaymentRequest(amount, orderInfo, orderId, requestId);
+    const momoResponse = await this.momoService.createPaymentRequest(
+      amount,
+      orderInfo,
+      orderId,
+      requestId,
+    );
     return { payUrl: momoResponse.payUrl, deeplink: momoResponse.deeplink };
   }
 
-  async getAllTransactions(options: { page: number; limit: number; search?: string; status?: string; planId?: string; }) {
+  async getAllTransactions(options: {
+    page: number;
+    limit: number;
+    search?: string;
+    status?: string;
+    planId?: string;
+  }) {
     const { page = 1, limit = 10, search, status, planId } = options;
     const skip = (page - 1) * limit;
 
@@ -86,94 +115,121 @@ export class SubscriptionService {
     if (planId && planId !== 'all') query.plan = planId;
 
     if (search) {
-      const users = await this.userModel.find({
-        $or: [
-          { username: { $regex: search, $options: 'i' } },
-          { email: { $regex: search, $options: 'i' } }
-        ]
-      }).select('_id');
+      const users = await this.userModel
+        .find({
+          $or: [
+            { username: { $regex: search, $options: 'i' } },
+            { email: { $regex: search, $options: 'i' } },
+          ],
+        })
+        .select('_id');
 
-      const userIds = users.map(u => u._id);
+      const userIds = users.map((u) => u._id);
       if (userIds.length === 0) {
-        return { data: [], pagination: { total: 0, page, limit, totalPages: 0 } };
+        return {
+          data: [],
+          pagination: { total: 0, page, limit, totalPages: 0 },
+        };
       }
       query.user = { $in: userIds };
     }
 
     const [transactions, total] = await Promise.all([
-      this.transactionModel.find(query)
+      this.transactionModel
+        .find(query)
         .populate('user', 'username email name')
         .populate('plan', 'name')
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit)
         .lean(),
-      this.transactionModel.countDocuments(query)
+      this.transactionModel.countDocuments(query),
     ]);
 
     const totalPages = Math.ceil(total / limit);
-    return { data: transactions, pagination: { total, page, limit, totalPages } };
+    return {
+      data: transactions,
+      pagination: { total, page, limit, totalPages },
+    };
   }
 
-  async getAllSubscriptions(options: { page: number; limit: number; search?: string; status?: string; planId?: string; }) {
+  async getAllSubscriptions(options: {
+    page: number;
+    limit: number;
+    search?: string;
+    status?: string;
+    planId?: string;
+  }) {
     const { page = 1, limit = 10, search, status, planId } = options;
     const skip = (page - 1) * limit;
 
     const query: any = { isDeleted: false };
 
     if (status) query.status = status as any;
-    if (planId && planId !== 'all') query.planId = new Types.ObjectId(planId) as any;
+    if (planId && planId !== 'all')
+      query.planId = new Types.ObjectId(planId) as any;
 
     if (search) {
-      const users = await this.userModel.find({
-        $or: [
-          { username: { $regex: search, $options: 'i' } },
-          { email: { $regex: search, $options: 'i' } },
-          { name: { $regex: search, $options: 'i' } }
-        ]
-      }).select('_id');
+      const users = await this.userModel
+        .find({
+          $or: [
+            { username: { $regex: search, $options: 'i' } },
+            { email: { $regex: search, $options: 'i' } },
+            { name: { $regex: search, $options: 'i' } },
+          ],
+        })
+        .select('_id');
 
-      const userIds = users.map(u => u._id);
+      const userIds = users.map((u) => u._id);
       if (userIds.length === 0) {
-        return { data: [], pagination: { total: 0, page, limit, totalPages: 0 } };
+        return {
+          data: [],
+          pagination: { total: 0, page, limit, totalPages: 0 },
+        };
       }
       query.userId = { $in: userIds } as any;
     }
 
     const [subscriptions, total] = await Promise.all([
-      this.subscriptionModel.find(query)
+      this.subscriptionModel
+        .find(query)
         .populate('userId', 'username email name')
         .populate('planId', 'name')
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit)
         .lean(),
-      this.subscriptionModel.countDocuments(query)
+      this.subscriptionModel.countDocuments(query),
     ]);
 
     const processedSubscriptions = subscriptions.map((sub: any) => {
       if (sub.userId) {
         if (!sub.userId.name) {
-          sub.userId.name = sub.userId.username || sub.userId.email.split('@')[0];
+          sub.userId.name =
+            sub.userId.username || sub.userId.email.split('@')[0];
         }
       }
       return sub;
     });
 
     const totalPages = Math.ceil(total / limit);
-    return { data: processedSubscriptions, pagination: { total, page, limit, totalPages } };
+    return {
+      data: processedSubscriptions,
+      pagination: { total, page, limit, totalPages },
+    };
   }
 
   async handleMomoIpn(ipnPayload: any): Promise<void> {
-    logger.info(`[MoMo IPN] Received payload: ${JSON.stringify(ipnPayload, null, 2)}`);
-
     const isSignatureValid = this.momoService.verifyIpnSignature(ipnPayload);
     if (!isSignatureValid) {
-      logger.error('[MoMo IPN] Invalid signature. Aborting.');
+      logger.warn('[MoMo IPN] Rejected callback with an invalid signature.');
       return;
     }
 
     const { orderId, resultCode, message, transId } = ipnPayload;
+    logger.info(
+      `[MoMo IPN] Received order=${orderId}, resultCode=${resultCode}, transaction=${transId}`,
+    );
 
     const transaction = await this.transactionModel.findOne({ orderId });
     if (!transaction) {
@@ -186,10 +242,17 @@ export class SubscriptionService {
       return;
     }
 
+    if (Number(ipnPayload.amount) !== transaction.amount) {
+      logger.error(`[MoMo IPN] Amount mismatch for transaction ${orderId}.`);
+      transaction.status = 'failed';
+      await transaction.save();
+      return;
+    }
+
     if (resultCode === 0) {
       const [user, plan] = await Promise.all([
         this.userModel.findById(transaction.user),
-        this.planModel.findById(transaction.plan)
+        this.planModel.findById(transaction.plan),
       ]);
 
       if (!user || !plan) {
@@ -201,17 +264,19 @@ export class SubscriptionService {
       await this.subscriptionModel.updateMany(
         {
           userId: user._id,
-          status: { $in: ['active', 'trialing'] }
+          status: { $in: ['active', 'trialing'] },
         },
         {
           $set: {
             status: 'canceled',
-            canceledAt: new Date()
-          }
-        }
+            canceledAt: new Date(),
+          },
+        },
       );
 
-      logger.info(`[MoMo IPN] Canceled previous active subscriptions for user ${user._id}`);
+      logger.info(
+        `[MoMo IPN] Canceled previous active subscriptions for user ${user._id}`,
+      );
 
       transaction.status = 'completed';
       transaction.gatewayTransactionId = transId;
@@ -242,7 +307,11 @@ export class SubscriptionService {
       await transaction.save();
 
       await this.userModel.findByIdAndUpdate(user._id, {
-        $set: { plan: plan.slug, remainingTokens: plan.tokenAllotment, subscriptionId: newSubscription._id }
+        $set: {
+          plan: plan.slug,
+          remainingTokens: plan.tokenAllotment,
+          subscriptionId: newSubscription._id,
+        },
       });
 
       logger.info(`[MoMo IPN] Upgrade success for user ${user._id}.`);
@@ -255,24 +324,26 @@ export class SubscriptionService {
   }
 
   async checkExpiredSubscriptions() {
-    logger.info("[SubscriptionCron] Checking for expired subscriptions...");
+    logger.info('[SubscriptionCron] Checking for expired subscriptions...');
     const now = new Date();
 
     const expiredSubs = await this.subscriptionModel.find({
       status: 'active',
-      currentPeriodEnd: { $lt: now }
+      currentPeriodEnd: { $lt: now },
     });
 
     if (expiredSubs.length === 0) {
-      logger.info("[SubscriptionCron] No expired subscriptions found.");
+      logger.info('[SubscriptionCron] No expired subscriptions found.');
       return;
     }
 
-    logger.info(`[SubscriptionCron] Found ${expiredSubs.length} expired subscriptions.`);
+    logger.info(
+      `[SubscriptionCron] Found ${expiredSubs.length} expired subscriptions.`,
+    );
 
     const freePlan = await this.planModel.findOne({ slug: 'free' });
     if (!freePlan) {
-      logger.error("[SubscriptionCron] CRITICAL: Free plan not found!");
+      logger.error('[SubscriptionCron] CRITICAL: Free plan not found!');
       return;
     }
 
@@ -285,13 +356,18 @@ export class SubscriptionService {
           $set: {
             plan: 'free',
             remainingTokens: freePlan.tokenAllotment,
-            subscriptionId: null
-          }
+            subscriptionId: null,
+          },
         });
 
-        logger.info(`[SubscriptionCron] Expired subscription ${sub._id} for user ${sub.userId}. Downgraded to Free.`);
+        logger.info(
+          `[SubscriptionCron] Expired subscription ${sub._id} for user ${sub.userId}. Downgraded to Free.`,
+        );
       } catch (err) {
-        logger.error(`[SubscriptionCron] Error processing subscription ${sub._id}:`, err);
+        logger.error(
+          `[SubscriptionCron] Error processing subscription ${sub._id}:`,
+          err,
+        );
       }
     }
   }
@@ -299,23 +375,28 @@ export class SubscriptionService {
   async cancelSubscription(userId: string) {
     const sub = await this.subscriptionModel.findOne({
       userId: new Types.ObjectId(userId) as any,
-      status: { $in: ['active', 'trialing'] }
+      status: { $in: ['active', 'trialing'] },
     });
 
     if (!sub) {
-      throw new BadRequestException("Bạn không có gói đăng ký nào đang hoạt động.");
+      throw new BadRequestException(
+        'Bạn không có gói đăng ký nào đang hoạt động.',
+      );
     }
 
     if (sub.cancelAtPeriodEnd) {
-      throw new BadRequestException("Gói đăng ký của bạn đã được lên lịch hủy vào cuối kỳ.");
+      throw new BadRequestException(
+        'Gói đăng ký của bạn đã được lên lịch hủy vào cuối kỳ.',
+      );
     }
 
     sub.cancelAtPeriodEnd = true;
     await sub.save();
 
     return {
-      message: "Gói đăng ký của bạn sẽ bị hủy vào cuối chu kỳ thanh toán hiện tại.",
-      currentPeriodEnd: sub.currentPeriodEnd
+      message:
+        'Gói đăng ký của bạn sẽ bị hủy vào cuối chu kỳ thanh toán hiện tại.',
+      currentPeriodEnd: sub.currentPeriodEnd,
     };
   }
 }

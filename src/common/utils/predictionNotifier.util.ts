@@ -49,7 +49,11 @@ class PredictionNotifier {
   /**
    * Notify all subscribers of a prediction that it has completed/failed.
    */
-  notify(predictionId: string, event: 'completed' | 'failed' | 'progress', data: any): void {
+  notify(
+    predictionId: string,
+    event: 'completed' | 'failed' | 'progress',
+    data: any,
+  ): void {
     const subs = this.subscriptions.get(predictionId);
     if (!subs || subs.size === 0) {
       return; // No subscribers for this prediction
@@ -60,7 +64,9 @@ class PredictionNotifier {
     for (const ws of subs) {
       if (ws.readyState === WebSocket.OPEN) {
         ws.send(message);
-        logger.debug(`[PredictionNotifier] Sent ${event} to client for ${predictionId}`);
+        logger.debug(
+          `[PredictionNotifier] Sent ${event} to client for ${predictionId}`,
+        );
       }
     }
 

@@ -1,4 +1,11 @@
-import { ExceptionFilter, Catch, ArgumentsHost, HttpException, HttpStatus, Logger } from '@nestjs/common';
+import {
+  ExceptionFilter,
+  Catch,
+  ArgumentsHost,
+  HttpException,
+  HttpStatus,
+  Logger,
+} from '@nestjs/common';
 import { HttpAdapterHost } from '@nestjs/core';
 
 @Catch()
@@ -17,12 +24,20 @@ export class AllExceptionsFilter implements ExceptionFilter {
         : HttpStatus.INTERNAL_SERVER_ERROR;
 
     const path = httpAdapter.getRequestUrl(ctx.getRequest());
-    const message = exception instanceof HttpException ? exception.message : 'Internal server error';
+    const message =
+      exception instanceof HttpException
+        ? exception.message
+        : 'Internal server error';
 
     if (httpStatus >= 500) {
-      this.logger.error(`[HTTP Exception] ${path} - Status: ${httpStatus} - Message: ${message}`, exception instanceof Error ? exception.stack : '');
+      this.logger.error(
+        `[HTTP Exception] ${path} - Status: ${httpStatus} - Message: ${message}`,
+        exception instanceof Error ? exception.stack : '',
+      );
     } else {
-      this.logger.warn(`[HTTP Exception] ${path} - Status: ${httpStatus} - Message: ${message}`);
+      this.logger.warn(
+        `[HTTP Exception] ${path} - Status: ${httpStatus} - Message: ${message}`,
+      );
     }
 
     const responseBody = {

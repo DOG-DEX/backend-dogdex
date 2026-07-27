@@ -1,11 +1,9 @@
-import mongoose, { Schema, Document, Types } from "mongoose";
+import mongoose, { Schema, Document, Types } from 'mongoose';
 
 export type ModelTaskType =
-  | "DOG_BREED_CLASSIFICATION"
-  | "CAT_BREED_CLASSIFICATION"
-  | "OBJECT_DETECTION";
-export type ModelFormatType = "ONNX" | "TENSORFLOW_JS" | "PYTORCH";
-export type ModelStatusType = "ACTIVE" | "INACTIVE" | "ARCHIVED";
+  'DOG_BREED_CLASSIFICATION' | 'CAT_BREED_CLASSIFICATION' | 'OBJECT_DETECTION';
+export type ModelFormatType = 'ONNX' | 'TENSORFLOW_JS' | 'PYTORCH';
+export type ModelStatusType = 'ACTIVE' | 'INACTIVE' | 'ARCHIVED';
 
 export type AIModelDoc = Document & {
   name: string;
@@ -26,37 +24,37 @@ export type AIModelDoc = Document & {
 const aiModelSchema = new Schema<AIModelDoc>(
   {
     name: { type: String, required: true, trim: true },
-    description: { type: String, default: "" },
+    description: { type: String, default: '' },
     taskType: {
       type: String,
       enum: [
-        "DOG_BREED_CLASSIFICATION",
-        "CAT_BREED_CLASSIFICATION",
-        "OBJECT_DETECTION",
+        'DOG_BREED_CLASSIFICATION',
+        'CAT_BREED_CLASSIFICATION',
+        'OBJECT_DETECTION',
       ],
       required: true,
       index: true,
     },
     format: {
       type: String,
-      enum: ["ONNX", "TENSORFLOW_JS", "PYTORCH"],
+      enum: ['ONNX', 'TENSORFLOW_JS', 'PYTORCH'],
       required: true,
     },
     huggingFaceRepo: { type: String, required: true, trim: true },
     fileName: { type: String, required: true, trim: true },
     path: { type: String, required: true, trim: true },
-    labelsFileName: { type: String, required: true, default: "labels.json" },
+    labelsFileName: { type: String, required: true, default: 'labels.json' },
     version: { type: String, required: true, trim: true },
     status: {
       type: String,
-      enum: ["ACTIVE", "INACTIVE", "ARCHIVED"],
-      default: "INACTIVE",
+      enum: ['ACTIVE', 'INACTIVE', 'ARCHIVED'],
+      default: 'INACTIVE',
       index: true,
     },
     tags: [{ type: String }],
     creator_id: {
       type: Schema.Types.ObjectId,
-      ref: "User",
+      ref: 'User',
       required: true,
     },
     isDeleted: {
@@ -65,8 +63,8 @@ const aiModelSchema = new Schema<AIModelDoc>(
     },
   },
   {
-    timestamps: { createdAt: "createdAt", updatedAt: "updatedAt" },
-    collection: "ai_models",
+    timestamps: { createdAt: 'createdAt', updatedAt: 'updatedAt' },
+    collection: 'ai_models',
     toJSON: {
       transform: (doc: any, ret: any) => {
         ret.id = ret._id.toString();
@@ -74,7 +72,7 @@ const aiModelSchema = new Schema<AIModelDoc>(
         delete ret.__v;
       },
     },
-  }
+  },
 );
 
-export const AIModel = mongoose.model<AIModelDoc>("AIModel", aiModelSchema);
+export const AIModel = mongoose.model<AIModelDoc>('AIModel', aiModelSchema);

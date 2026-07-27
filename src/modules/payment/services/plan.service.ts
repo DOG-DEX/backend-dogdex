@@ -14,11 +14,11 @@ export interface IPlanQuery {
 
 @Injectable()
 export class PlanService {
-  constructor(
-    @InjectModel('Plan') private planModel: Model<PlanDoc>,
-  ) {}
+  constructor(@InjectModel('Plan') private planModel: Model<PlanDoc>) {}
 
-  async getAllPaginated(query: IPlanQuery = {}): Promise<{ data: PlanDoc[]; pagination: any }> {
+  async getAllPaginated(
+    query: IPlanQuery = {},
+  ): Promise<{ data: PlanDoc[]; pagination: any }> {
     const { page = 1, limit = 10, search, ...filterQuery } = query;
     const finalFilter: any = { isDeleted: false, ...filterQuery };
 
@@ -31,7 +31,8 @@ export class PlanService {
 
     const skip = (page - 1) * limit;
     const [plans, total] = await Promise.all([
-      this.planModel.find(finalFilter)
+      this.planModel
+        .find(finalFilter)
         .sort({ order: 1, createdAt: -1 })
         .skip(skip)
         .limit(limit),
@@ -50,9 +51,7 @@ export class PlanService {
   }
 
   async getPublicPlans(): Promise<PlanDoc[]> {
-    return this.planModel.find({ isDeleted: false })
-      .sort({ order: 1 })
-      .exec();
+    return this.planModel.find({ isDeleted: false }).sort({ order: 1 }).exec();
   }
 
   async getOne(query: IPlanQuery): Promise<PlanDoc | null> {
@@ -77,10 +76,12 @@ export class PlanService {
     const updatedPlan = await this.planModel.findByIdAndUpdate(
       id,
       { $set: updateData },
-      { new: true, runValidators: true }
+      { new: true, runValidators: true },
     );
     if (!updatedPlan)
-      throw new NotFoundException(`Không tìm thấy gói cước với ID: ${id} để cập nhật.`);
+      throw new NotFoundException(
+        `Không tìm thấy gói cước với ID: ${id} để cập nhật.`,
+      );
     return updatedPlan;
   }
 
@@ -88,10 +89,12 @@ export class PlanService {
     const deletedPlan = await this.planModel.findByIdAndUpdate(
       id,
       { $set: { isDeleted: true } },
-      { new: true }
+      { new: true },
     );
     if (!deletedPlan)
-      throw new NotFoundException(`Không tìm thấy gói cước với ID: ${id} để xóa.`);
+      throw new NotFoundException(
+        `Không tìm thấy gói cước với ID: ${id} để xóa.`,
+      );
     return deletedPlan;
   }
 }

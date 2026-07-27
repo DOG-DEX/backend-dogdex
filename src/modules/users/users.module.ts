@@ -19,7 +19,10 @@ import { MediaModel } from '../media/schemas/medias.model';
 import { DirectoryModel } from '../media/schemas/directory.model';
 import { PredictionHistoryModel } from '../predictions/schemas/prediction_history.model';
 import { FeedbackModel } from '../community/schemas/feedback.model';
-import { DogBreedWikiModel, DogBreedWikiViModel } from '../dogs/schemas/dogs_wiki.model';
+import {
+  DogBreedWikiModel,
+  DogBreedWikiViModel,
+} from '../dogs/schemas/dogs_wiki.model';
 
 @Module({
   imports: [

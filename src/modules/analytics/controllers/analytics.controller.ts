@@ -1,4 +1,13 @@
-import { Controller, Get, Post, Query, Body, BadRequestException, ParseIntPipe, DefaultValuePipe } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Query,
+  Body,
+  BadRequestException,
+  ParseIntPipe,
+  DefaultValuePipe,
+} from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { LeaderboardService } from '../services/leaderboard.service';
 import { MailService } from '../../../shared/mail/mail.service';
@@ -34,7 +43,9 @@ export class AnalyticsController {
 
   @Public()
   @Get('leaderboard/locations')
-  @ApiOperation({ summary: 'Get list of available countries/cities in leaderboard' })
+  @ApiOperation({
+    summary: 'Get list of available countries/cities in leaderboard',
+  })
   async getLocations(@Query('type') type: 'country' | 'city') {
     if (type !== 'country' && type !== 'city') {
       throw new BadRequestException('Type must be country or city');
@@ -50,7 +61,10 @@ export class AnalyticsController {
     if (!body.email || !body.message) {
       throw new BadRequestException('Email and message are required');
     }
-    await this.mailService.sendContactFormEmail({ fromEmail: body.email, message: body.message });
+    await this.mailService.sendContactFormEmail({
+      fromEmail: body.email,
+      message: body.message,
+    });
     return { message: 'Thank you! Your message has been sent.' };
   }
 }

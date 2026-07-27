@@ -11,13 +11,15 @@ import * as WebSocket from 'ws';
 import { Logger } from '@nestjs/common';
 
 @WebSocketGateway({ path: '/ws/prediction-status' })
-export class PredictionGateway implements OnGatewayConnection, OnGatewayDisconnect {
+export class PredictionGateway
+  implements OnGatewayConnection, OnGatewayDisconnect
+{
   @WebSocketServer()
   server: WebSocket.Server;
-  
+
   private readonly logger = new Logger(PredictionGateway.name);
   private subscriptions = new Map<string, Set<WebSocket>>();
-  
+
   handleConnection(client: WebSocket) {
     this.logger.log(`Client connected`);
   }
@@ -28,13 +30,21 @@ export class PredictionGateway implements OnGatewayConnection, OnGatewayDisconne
   }
 
   @SubscribeMessage('message')
-  handleMessage(@ConnectedSocket() client: WebSocket, @MessageBody() data: any) {
+  handleMessage(
+    @ConnectedSocket() client: WebSocket,
+    @MessageBody() data: any,
+  ) {
     try {
       const payload = typeof data === 'string' ? JSON.parse(data) : data;
-      
+
       if (payload.action === 'subscribe' && payload.predictionId) {
         this.subscribe(payload.predictionId, client);
-        client.send(JSON.stringify({ event: 'subscribed', predictionId: payload.predictionId }));
+        client.send(
+          JSON.stringify({
+            event: 'subscribed',
+            predictionId: payload.predictionId,
+          }),
+        );
       } else if (payload.action === 'unsubscribe' && payload.predictionId) {
         this.unsubscribe(payload.predictionId, client);
       }
@@ -69,7 +79,7 @@ export class PredictionGateway implements OnGatewayConnection, OnGatewayDisconne
     const clients = this.subscriptions.get(predictionId);
     if (clients) {
       const message = JSON.stringify({ predictionId, ...statusData });
-      clients.forEach(client => {
+      clients.forEach((client) => {
         if (client.readyState === 1 /* OPEN */) {
           client.send(message);
         }

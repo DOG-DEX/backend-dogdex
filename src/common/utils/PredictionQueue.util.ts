@@ -33,9 +33,15 @@ export interface PredictionJobData {
   lang?: 'vi' | 'en';
 }
 
-export const predictionQueue = new Queue<PredictionJobData>('prediction-queue', {
-  connection: new IORedis(process.env.REDIS_URL || 'redis://localhost:6379', redisConfig),
-});
+export const predictionQueue = new Queue<PredictionJobData>(
+  'prediction-queue',
+  {
+    connection: new IORedis(
+      process.env.REDIS_URL || 'redis://localhost:6379',
+      redisConfig,
+    ),
+  },
+);
 
 const worker = new Worker<PredictionJobData>(
   'prediction-queue',
@@ -43,7 +49,10 @@ const worker = new Worker<PredictionJobData>(
     logger.info(`[PredictionWorker] Processing job ${job.id}`);
   },
   {
-    connection: new IORedis(process.env.REDIS_URL || 'redis://localhost:6379', redisConfig),
+    connection: new IORedis(
+      process.env.REDIS_URL || 'redis://localhost:6379',
+      redisConfig,
+    ),
     concurrency: 2,
   },
 );

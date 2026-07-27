@@ -1,4 +1,8 @@
-import { Injectable, ConflictException, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  ConflictException,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { DogBreedWikiDoc } from '../schemas/dogs_wiki.model';
@@ -21,21 +25,26 @@ export interface QueryOptions {
 @Injectable()
 export class DogsWikiService {
   constructor(
-    @InjectModel('DogBreedWikiEn') private dogBreedWikiEnModel: Model<DogBreedWikiDoc>,
-    @InjectModel('DogBreedWikiVi') private dogBreedWikiViModel: Model<DogBreedWikiDoc>,
+    @InjectModel('DogBreedWikiEn')
+    private dogBreedWikiEnModel: Model<DogBreedWikiDoc>,
+    @InjectModel('DogBreedWikiVi')
+    private dogBreedWikiViModel: Model<DogBreedWikiDoc>,
   ) {}
 
   private getModel(lang: 'vi' | 'en' = 'en') {
     return lang === 'vi' ? this.dogBreedWikiViModel : this.dogBreedWikiEnModel;
   }
 
-  async createBreed(data: Partial<DogBreedWikiDoc>, lang: 'vi' | 'en' = 'en'): Promise<DogBreedWikiDoc> {
+  async createBreed(
+    data: Partial<DogBreedWikiDoc>,
+    lang: 'vi' | 'en' = 'en',
+  ): Promise<DogBreedWikiDoc> {
     const Model = this.getModel(lang);
     if (!data.slug || !data.breed) {
       throw new Error('Slug and Breed Name are required.');
     }
     const existing = await Model.findOne({
-      $or: [{ slug: data.slug }, { breed: data.breed }]
+      $or: [{ slug: data.slug }, { breed: data.breed }],
     });
     if (existing) {
       throw new ConflictException('Slug or Breed Name already exists.');
@@ -43,17 +52,24 @@ export class DogsWikiService {
     return Model.create(data);
   }
 
-  async getBreedBySlug(slug: string, lang: 'vi' | 'en' = 'en'): Promise<DogBreedWikiDoc> {
+  async getBreedBySlug(
+    slug: string,
+    lang: 'vi' | 'en' = 'en',
+  ): Promise<DogBreedWikiDoc> {
     const Model = this.getModel(lang);
     const breed = await Model.findOne({
       slug: { $regex: new RegExp(`^${slug}$`, 'i') },
       isDeleted: false,
     });
-    if (!breed) throw new NotFoundException(`Breed not found with slug: '${slug}'`);
+    if (!breed)
+      throw new NotFoundException(`Breed not found with slug: '${slug}'`);
     return breed;
   }
 
-  async getBreedsBySlugs(slugs: string[], lang: 'vi' | 'en' = 'en'): Promise<DogBreedWikiDoc[]> {
+  async getBreedsBySlugs(
+    slugs: string[],
+    lang: 'vi' | 'en' = 'en',
+  ): Promise<DogBreedWikiDoc[]> {
     const Model = this.getModel(lang);
     if (!slugs || slugs.length === 0) {
       return [];
@@ -65,11 +81,30 @@ export class DogsWikiService {
   }
 
   async getAllBreeds(options: QueryOptions) {
-    const { page = 1, limit = 20, search, group, energy_level, trainability, shedding_level, suitable_for, ids, excludeIds, lang = 'en' } = options;
+    const {
+      page = 1,
+      limit = 20,
+      search,
+      group,
+      energy_level,
+      trainability,
+      shedding_level,
+      suitable_for,
+      ids,
+      excludeIds,
+      lang = 'en',
+    } = options;
     const Model = this.getModel(lang);
     const skip = (page - 1) * limit;
 
-    const allowedSortFields = ['breed', 'energy_level', 'trainability', 'shedding_level', 'maintenance_difficulty', 'rarity_level'];
+    const allowedSortFields = [
+      'breed',
+      'energy_level',
+      'trainability',
+      'shedding_level',
+      'maintenance_difficulty',
+      'rarity_level',
+    ];
     let sortOption: { [key: string]: 1 | -1 } = { breed: 1 };
 
     if (options.sort) {
@@ -100,17 +135,19 @@ export class DogsWikiService {
 
     const [breeds, total] = await Promise.all([
       Model.find(query)
-        .select('slug breed pokedexNumber group origin mediaPath rarity_level')
+        .select(
+          'slug breed pokedexNumber group origin mediaPath rarity_level description',
+        )
         .sort(sortOption)
         .skip(skip)
         .limit(limit)
         .lean(),
-      Model.countDocuments(query)
+      Model.countDocuments(query),
     ]);
 
     return {
       data: breeds,
-      pagination: { total, page, limit, totalPages: Math.ceil(total / limit) }
+      pagination: { total, page, limit, totalPages: Math.ceil(total / limit) },
     };
   }
 
@@ -119,25 +156,37 @@ export class DogsWikiService {
     return Model.countDocuments({ isDeleted: { $ne: true } });
   }
 
-  async updateBreed(slug: string, data: Partial<DogBreedWikiDoc>, lang: 'vi' | 'en' = 'en'): Promise<DogBreedWikiDoc> {
+  async updateBreed(
+    slug: string,
+    data: Partial<DogBreedWikiDoc>,
+    lang: 'vi' | 'en' = 'en',
+  ): Promise<DogBreedWikiDoc> {
     const Model = this.getModel(lang);
     const breed = await Model.findOneAndUpdate(
       { slug, isDeleted: { $ne: true } },
       data,
-      { new: true, runValidators: true }
+      { new: true, runValidators: true },
     );
-    if (!breed) throw new NotFoundException(`Breed not found with slug: '${slug}' to update.`);
+    if (!breed)
+      throw new NotFoundException(
+        `Breed not found with slug: '${slug}' to update.`,
+      );
     return breed;
   }
 
-  async softDeleteBreed(slug: string, lang: 'vi' | 'en' = 'en'): Promise<{ message: string }> {
+  async softDeleteBreed(
+    slug: string,
+    lang: 'vi' | 'en' = 'en',
+  ): Promise<{ message: string }> {
     const Model = this.getModel(lang);
     const result = await Model.updateOne(
       { slug, isDeleted: { $ne: true } },
-      { isDeleted: true }
+      { isDeleted: true },
     );
     if (result.modifiedCount === 0) {
-      throw new NotFoundException(`Breed not found with slug: ${slug} to delete.`);
+      throw new NotFoundException(
+        `Breed not found with slug: ${slug} to delete.`,
+      );
     }
     return { message: 'Breed soft deleted successfully.' };
   }

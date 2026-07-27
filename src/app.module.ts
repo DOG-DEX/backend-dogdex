@@ -1,12 +1,12 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { validateEnv } from './config/env.config';
-import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 
 // Infrastructure
 import { DatabaseModule } from './database/database.module';
@@ -39,7 +39,20 @@ import { ModerationModule } from './modules/moderation/moderation.module';
 @Module({
   imports: [
     // Config
-    ConfigModule.forRoot({ isGlobal: true, validate: validateEnv }),
+    ConfigModule.forRoot({
+      isGlobal: true,
+      // `start:prod` loads .env.prod before Nest starts. Local development uses .env.local.
+      envFilePath:
+        process.env.NODE_ENV === 'production' ? '.env.prod' : '.env.local',
+      validate: validateEnv,
+    }),
+    ThrottlerModule.forRoot([
+      {
+        name: 'default',
+        ttl: 60_000,
+        limit: 120,
+      },
+    ]),
     ScheduleModule.forRoot(),
 
     // Infrastructure
@@ -73,6 +86,10 @@ import { ModerationModule } from './modules/moderation/moderation.module';
   controllers: [AppController],
   providers: [
     AppService,
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
   ],
 })
 export class AppModule {}

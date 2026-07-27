@@ -1,4 +1,15 @@
-import { Controller, Get, Post, Put, Param, Body, Request, Query, ParseIntPipe, DefaultValuePipe } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Param,
+  Body,
+  Request,
+  Query,
+  ParseIntPipe,
+  DefaultValuePipe,
+} from '@nestjs/common';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { ModerationService } from '../services/moderation.service';
 import { Roles } from '../../../common/decorators/roles.decorator';
@@ -12,7 +23,12 @@ export class ModerationController {
   /** User reports a post/comment/user */
   @Post('reports')
   createReport(@Body() body: any, @Request() req: any) {
-    return this.moderationService.createReport(req.user._id, body.targetType, body.targetId, body.reason);
+    return this.moderationService.createReport(
+      req.user._id,
+      body.targetType,
+      body.targetId,
+      body.reason,
+    );
   }
 
   /** Moderator views pending reports */
@@ -28,7 +44,11 @@ export class ModerationController {
   /** Moderator approves/rejects a report */
   @Roles('admin', 'de')
   @Put('reports/:id/review')
-  review(@Param('id') id: string, @Body() body: { status: 'approved' | 'rejected' }, @Request() req: any) {
+  review(
+    @Param('id') id: string,
+    @Body() body: { status: 'approved' | 'rejected' },
+    @Request() req: any,
+  ) {
     return this.moderationService.review(id, req.user._id, body.status);
   }
 }

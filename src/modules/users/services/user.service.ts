@@ -1,4 +1,10 @@
-import { Injectable, Logger, NotFoundException, BadRequestException, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  NotFoundException,
+  BadRequestException,
+  ConflictException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import * as bcrypt from 'bcrypt';
@@ -25,7 +31,8 @@ export class UserService {
     @InjectModel('Otp') private otpModel: Model<OtpDoc>,
     @InjectModel('Media') private mediaModel: Model<MediaDoc>,
     @InjectModel('Directory') private directoryModel: Model<DirectoryDoc>,
-    @InjectModel('PredictionHistory') private predictionModel: Model<PredictionHistoryDoc>,
+    @InjectModel('PredictionHistory')
+    private predictionModel: Model<PredictionHistoryDoc>,
     @InjectModel('Feedback') private feedbackModel: Model<FeedbackDoc>,
     private mailService: MailService,
   ) {}
@@ -40,22 +47,29 @@ export class UserService {
     } as EnrichedUser;
   }
 
-  async getAll(options: { page?: number; limit?: number; search?: string } = {}) {
+  async getAll(
+    options: { page?: number; limit?: number; search?: string } = {},
+  ) {
     const { page = 1, limit = 10, search } = options;
     const skip = (page - 1) * limit;
     const query: any = { isDeleted: false };
 
     if (search) {
-      const searchRegex = new RegExp(search, "i");
+      const searchRegex = new RegExp(search, 'i');
       query.$or = [{ username: searchRegex }, { email: searchRegex }];
     }
 
     const [users, total] = await Promise.all([
-      this.userModel.find(query).select('-password').sort({ createdAt: -1 }).skip(skip).limit(limit),
+      this.userModel
+        .find(query)
+        .select('-password')
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit),
       this.userModel.countDocuments(query),
     ]);
 
-    const enrichedUsers = await Promise.all(users.map(u => this.enrich(u)));
+    const enrichedUsers = await Promise.all(users.map((u) => this.enrich(u)));
 
     return {
       data: enrichedUsers,
@@ -67,13 +81,18 @@ export class UserService {
   }
 
   async getById(id: string): Promise<EnrichedUser> {
-    const user = await this.userModel.findOne({ _id: id, isDeleted: false }).select('-password');
+    const user = await this.userModel
+      .findOne({ _id: id, isDeleted: false })
+      .select('-password');
     const enriched = await this.enrich(user);
     if (!enriched) throw new NotFoundException('User not found');
     return enriched;
   }
 
-  async getByEmail(email: string, selectPassword = false): Promise<EnrichedUser & { password?: string }> {
+  async getByEmail(
+    email: string,
+    selectPassword = false,
+  ): Promise<EnrichedUser & { password?: string }> {
     const query = this.userModel.findOne({ email, isDeleted: false });
     const user = await (selectPassword ? query.select('+password') : query);
     const rawPassword = user?.password;
@@ -95,10 +114,14 @@ export class UserService {
       if (existingEmail.verify) {
         throw new ConflictException('Email already registered');
       }
-      throw new BadRequestException('Email registered but not verified. Please verify your email or request a new OTP.');
+      throw new BadRequestException(
+        'Email registered but not verified. Please verify your email or request a new OTP.',
+      );
     }
 
-    const existingUsername = await this.userModel.findOne({ username: cleanUsername });
+    const existingUsername = await this.userModel.findOne({
+      username: cleanUsername,
+    });
     if (existingUsername) throw new BadRequestException('Username taken');
 
     const freePlan = await this.planModel.findOne({ slug: 'free' }).lean();
@@ -114,7 +137,10 @@ export class UserService {
 
     await user.save();
 
-    const directory = new this.directoryModel({ name: user.username, creator_id: user._id });
+    const directory = new this.directoryModel({
+      name: user.username,
+      creator_id: user._id,
+    });
     await directory.save();
     user.directory_id = directory._id as any;
     await user.save();
@@ -134,32 +160,46 @@ export class UserService {
     const cleanEmail = email.trim().toLowerCase();
     const user = await this.userModel.findOne({ email: cleanEmail });
     if (!user) throw new NotFoundException('User not found');
-    if (user.verify) throw new BadRequestException('Account is already verified');
+    if (user.verify)
+      throw new BadRequestException('Account is already verified');
 
-    const lastOtp = await this.otpModel.findOne({
-      email: cleanEmail,
-      type: OtpType.EMAIL_VERIFICATION,
-    }).sort({ createdAt: -1 });
+    const lastOtp = await this.otpModel
+      .findOne({
+        email: cleanEmail,
+        type: OtpType.EMAIL_VERIFICATION,
+      })
+      .sort({ createdAt: -1 });
 
     if (lastOtp && (lastOtp as any).createdAt) {
-      const timePassedSec = Math.floor((Date.now() - new Date((lastOtp as any).createdAt).getTime()) / 1000);
+      const timePassedSec = Math.floor(
+        (Date.now() - new Date((lastOtp as any).createdAt).getTime()) / 1000,
+      );
       const cooldownSec = 60;
       if (timePassedSec < cooldownSec) {
-        throw new BadRequestException(`Please wait ${cooldownSec - timePassedSec} seconds before requesting a new OTP.`);
+        throw new BadRequestException(
+          `Please wait ${cooldownSec - timePassedSec} seconds before requesting a new OTP.`,
+        );
       }
     }
 
     const otpCode = crypto.randomInt(100000, 999999).toString();
-    await this.otpModel.deleteMany({ email: cleanEmail, type: OtpType.EMAIL_VERIFICATION });
+    await this.otpModel.deleteMany({
+      email: cleanEmail,
+      type: OtpType.EMAIL_VERIFICATION,
+    });
 
     await new this.otpModel({
       email: cleanEmail,
-      otp: otpCode,
+      otpHash: await bcrypt.hash(otpCode, 12),
       type: OtpType.EMAIL_VERIFICATION,
       expiresAt: new Date(Date.now() + 10 * 60 * 1000),
     }).save();
 
-    await this.mailService.sendVerificationOtp({ to: cleanEmail, otp: otpCode, userName: user.username });
+    await this.mailService.sendVerificationOtp({
+      to: cleanEmail,
+      otp: otpCode,
+      userName: user.username,
+    });
     return { message: 'OTP sent successfully' };
   }
 
@@ -170,10 +210,22 @@ export class UserService {
     await this.userModel.updateOne({ _id: id }, { $set: { isDeleted: true } });
 
     await Promise.all([
-      this.mediaModel.updateMany({ creator_id: user._id }, { $set: { isDeleted: true } }),
-      this.directoryModel.updateMany({ creator_id: user._id }, { $set: { isDeleted: true } }),
-      this.predictionModel.updateMany({ user: user._id }, { $set: { isDeleted: true } }),
-      this.feedbackModel.updateMany({ user_id: user._id }, { $set: { isDeleted: true } }),
+      this.mediaModel.updateMany(
+        { creator_id: user._id },
+        { $set: { isDeleted: true } },
+      ),
+      this.directoryModel.updateMany(
+        { creator_id: user._id },
+        { $set: { isDeleted: true } },
+      ),
+      this.predictionModel.updateMany(
+        { user: user._id },
+        { $set: { isDeleted: true } },
+      ),
+      this.feedbackModel.updateMany(
+        { user_id: user._id },
+        { $set: { isDeleted: true } },
+      ),
     ]);
 
     if (user.email) {
@@ -185,12 +237,14 @@ export class UserService {
   async updateUserById(userId: string, updateData: any): Promise<EnrichedUser> {
     const user = await this.userModel.findById(userId);
     if (!user || user.isDeleted) throw new NotFoundException('User not found');
-    
+
     if (updateData.password) {
       updateData.password = await bcrypt.hash(updateData.password, 10);
     }
-    
-    const updated = await this.userModel.findByIdAndUpdate(userId, updateData, { new: true }).select('-password');
+
+    const updated = await this.userModel
+      .findByIdAndUpdate(userId, updateData, { new: true })
+      .select('-password');
     const enriched = await this.enrich(updated);
     if (!enriched) throw new NotFoundException('User not found');
     return enriched;

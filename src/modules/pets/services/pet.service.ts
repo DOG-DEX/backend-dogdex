@@ -8,11 +8,16 @@ export class PetService {
   constructor(@InjectModel('Pet') private readonly petModel: Model<PetDoc>) {}
 
   async findByOwner(ownerId: string) {
-    return this.petModel.find({ owner: new Types.ObjectId(ownerId), isDeleted: false });
+    return this.petModel.find({
+      owner: new Types.ObjectId(ownerId),
+      isDeleted: false,
+    });
   }
 
   async findById(id: string) {
-    return this.petModel.findOne({ _id: id, isDeleted: false }).populate('owner', '-password');
+    return this.petModel
+      .findOne({ _id: id, isDeleted: false })
+      .populate('owner', '-password');
   }
 
   async findByQrCode(qrCode: string) {

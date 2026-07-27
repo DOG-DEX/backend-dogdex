@@ -1,7 +1,16 @@
-import { Injectable, BadRequestException, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { CommunityPostDoc, PostType, PostStatus } from '../schemas/community_post.model';
+import {
+  CommunityPostDoc,
+  PostType,
+  PostStatus,
+} from '../schemas/community_post.model';
 import { PredictionService } from '../../predictions/services/prediction.service';
 import { MatchingService } from './matching.service';
 
@@ -16,14 +25,14 @@ export interface CreatePostDTO {
   photos?: string[];
   dog_id?: string;
   location?: {
-      lat: number;
-      lng: number;
-      address: string;
+    lat: number;
+    lng: number;
+    address: string;
   };
   contact_info: {
-      name: string;
-      phone?: string;
-      email?: string;
+    name: string;
+    phone?: string;
+    email?: string;
   };
 }
 
@@ -42,13 +51,19 @@ export interface FilterOptions {
 @Injectable()
 export class PostService {
   constructor(
-    @InjectModel('CommunityPost') private communityPostModel: Model<CommunityPostDoc>,
+    @InjectModel('CommunityPost')
+    private communityPostModel: Model<CommunityPostDoc>,
     @InjectModel('DogProfile') private dogProfileModel: Model<any>,
     private readonly predictionService: PredictionService,
-    private readonly matchingService: MatchingService
+    private readonly matchingService: MatchingService,
   ) {}
 
-  async createPost(data: CreatePostDTO, authorId: string, req: any, trustedAiMetadata?: any): Promise<CommunityPostDoc> {
+  async createPost(
+    data: CreatePostDTO,
+    authorId: string,
+    req: any,
+    trustedAiMetadata?: any,
+  ): Promise<CommunityPostDoc> {
     let aiMetadata: {
       breed: string;
       breed_slug: string;
@@ -56,10 +71,10 @@ export class PostService {
       color: string;
       verificationType?: 'camera' | 'qr';
     } = {
-      breed: "Unknown",
-      breed_slug: "unknown",
+      breed: 'Unknown',
+      breed_slug: 'unknown',
       confidence: 0,
-      color: "Unknown"
+      color: 'Unknown',
     };
 
     if (trustedAiMetadata) {
@@ -71,56 +86,78 @@ export class PostService {
           breed: linkedDog.breed,
           breed_slug: toSlug(linkedDog.breed),
           confidence: 1.0,
-          color: linkedDog.attributes?.color || "Unknown",
-          verificationType: 'qr' as const
+          color: linkedDog.attributes?.color || 'Unknown',
+          verificationType: 'qr' as const,
         };
         if (!data.photos || data.photos.length === 0) {
-          data.photos = linkedDog.photos?.length > 0
+          data.photos =
+            linkedDog.photos?.length > 0
               ? linkedDog.photos
-              : (linkedDog.avatarPath ? [linkedDog.avatarPath] : []);
+              : linkedDog.avatarPath
+                ? [linkedDog.avatarPath]
+                : [];
         }
       } else {
-        throw new BadRequestException("Linked dog profile not found.");
+        throw new BadRequestException('Linked dog profile not found.');
       }
     } else {
       if (!data.photos || data.photos.length === 0) {
-        throw new BadRequestException("Post must have at least one photo for AI verification.");
+        throw new BadRequestException(
+          'Post must have at least one photo for AI verification.',
+        );
       }
 
       const mainPhotoUrl = data.photos[0];
 
       try {
-        const predictionHistory = await this.predictionService.makeUrlPrediction(authorId, mainPhotoUrl, req);
+        const predictionHistory =
+          await this.predictionService.makeUrlPrediction(
+            authorId,
+            mainPhotoUrl,
+            req,
+          );
 
-        if (!predictionHistory.predictions || predictionHistory.predictions.length === 0) {
-          throw new BadRequestException("AI did not detect any dog in the image. Please upload a clear dog photo.");
+        if (
+          !predictionHistory.predictions ||
+          predictionHistory.predictions.length === 0
+        ) {
+          throw new BadRequestException(
+            'AI did not detect any dog in the image. Please upload a clear dog photo.',
+          );
         }
 
         const topPrediction = predictionHistory.predictions[0];
 
         if (topPrediction.confidence < 0.4) {
-          throw new BadRequestException("The image is not clear enough or does not contain a dog (Low confidence).");
+          throw new BadRequestException(
+            'The image is not clear enough or does not contain a dog (Low confidence).',
+          );
         }
 
         aiMetadata = {
           breed: topPrediction.class,
           breed_slug: toSlug(topPrediction.class),
           confidence: topPrediction.confidence,
-          color: "Unknown"
+          color: 'Unknown',
         };
       } catch (error: any) {
         if (error instanceof BadRequestException) throw error;
-        throw new BadRequestException("AI Verification failed. Could not process image.");
+        throw new BadRequestException(
+          'AI Verification failed. Could not process image.',
+        );
       }
     }
 
-    const locationGeoJSON = data.location ? {
-      type: "Point" as const,
-      coordinates: [data.location.lng, data.location.lat],
-      address: data.location.address
-    } : undefined;
+    const locationGeoJSON = data.location
+      ? {
+          type: 'Point' as const,
+          coordinates: [data.location.lng, data.location.lat],
+          address: data.location.address,
+        }
+      : undefined;
 
-    if (!locationGeoJSON) throw new BadRequestException("Location is required.");
+    if (!locationGeoJSON)
+      throw new BadRequestException('Location is required.');
 
     const post = await this.communityPostModel.create({
       author_id: authorId,
@@ -132,29 +169,38 @@ export class PostService {
       dog_id: data.dog_id,
       location: locationGeoJSON,
       contact_info: data.contact_info,
-      ai_metadata: aiMetadata
+      ai_metadata: aiMetadata,
     });
 
-    this.matchingService.findPotentialMatches({
-      type: post.type,
-      breed: aiMetadata.breed,
-      longitude: locationGeoJSON.coordinates[0],
-      latitude: locationGeoJSON.coordinates[1],
-      distanceInKm: 10,
-      authorId: authorId
-    }).then(matches => {
-      if (matches.length > 0) {
-        console.log(`[MatchingService] Found ${matches.length} potential matches for Post ${post._id}. Email sent to author.`);
-      }
-    });
+    this.matchingService
+      .findPotentialMatches({
+        type: post.type,
+        breed: aiMetadata.breed,
+        longitude: locationGeoJSON.coordinates[0],
+        latitude: locationGeoJSON.coordinates[1],
+        distanceInKm: 10,
+        authorId: authorId,
+      })
+      .then((matches) => {
+        if (matches.length > 0) {
+          console.log(
+            `[MatchingService] Found ${matches.length} potential matches for Post ${post._id}. Email sent to author.`,
+          );
+        }
+      });
 
     return post;
   }
 
-  async getPosts(filters: FilterOptions, page: number = 1, limit: number = 20, view: string = 'list'): Promise<{ data: CommunityPostDoc[], total: number }> {
+  async getPosts(
+    filters: FilterOptions,
+    page: number = 1,
+    limit: number = 20,
+    view: string = 'list',
+  ): Promise<{ data: CommunityPostDoc[]; total: number }> {
     const query: any = {
       status: filters.status || PostStatus.OPEN,
-      isDeleted: { $ne: true }
+      isDeleted: { $ne: true },
     };
 
     if (filters.type) {
@@ -162,13 +208,15 @@ export class PostService {
     }
 
     if (filters.breed) {
-      query["ai_metadata.breed_slug"] = toSlug(filters.breed);
+      query['ai_metadata.breed_slug'] = toSlug(filters.breed);
     }
 
     if (filters.minPrice !== undefined || filters.maxPrice !== undefined) {
-      query["sale_info.price"] = {};
-      if (filters.minPrice !== undefined) query["sale_info.price"].$gte = filters.minPrice;
-      if (filters.maxPrice !== undefined) query["sale_info.price"].$lte = filters.maxPrice;
+      query['sale_info.price'] = {};
+      if (filters.minPrice !== undefined)
+        query['sale_info.price'].$gte = filters.minPrice;
+      if (filters.maxPrice !== undefined)
+        query['sale_info.price'].$lte = filters.maxPrice;
     }
 
     let isGeospatial = false;
@@ -179,20 +227,17 @@ export class PostService {
       query.location = {
         $near: {
           $geometry: {
-            type: "Point",
-            coordinates: [filters.lng, filters.lat]
+            type: 'Point',
+            coordinates: [filters.lng, filters.lat],
           },
-          $maxDistance: filters.radius * 1000
-        }
+          $maxDistance: filters.radius * 1000,
+        },
       };
 
       countQuery.location = {
         $geoWithin: {
-          $centerSphere: [
-            [filters.lng, filters.lat],
-            filters.radius / 6378.1
-          ]
-        }
+          $centerSphere: [[filters.lng, filters.lat], filters.radius / 6378.1],
+        },
       };
     }
 
@@ -204,60 +249,73 @@ export class PostService {
     }
 
     if (view === 'map_radar') {
-      dbQuery.select("location type ai_metadata photos createdAt _id");
+      dbQuery.select('location type ai_metadata photos createdAt _id');
     }
 
     dbQuery = dbQuery.skip(skip).limit(limit);
 
     const [data, total] = await Promise.all([
       dbQuery,
-      this.communityPostModel.countDocuments(countQuery)
+      this.communityPostModel.countDocuments(countQuery),
     ]);
 
     return { data, total };
   }
 
-  async getRadarPosts(lat: number, lng: number, radius: number = 10, breed?: string, sourceType?: PostType): Promise<CommunityPostDoc[]> {
-    const targetType = sourceType === PostType.FOUND ? PostType.LOST : PostType.FOUND;
+  async getRadarPosts(
+    lat: number,
+    lng: number,
+    radius: number = 10,
+    breed?: string,
+    sourceType?: PostType,
+  ): Promise<CommunityPostDoc[]> {
+    const targetType =
+      sourceType === PostType.FOUND ? PostType.LOST : PostType.FOUND;
 
     const query: any = {
       status: PostStatus.OPEN,
       type: targetType,
-      isDeleted: { $ne: true }
+      isDeleted: { $ne: true },
     };
 
     if (breed) {
-      query["ai_metadata.breed_slug"] = toSlug(breed);
+      query['ai_metadata.breed_slug'] = toSlug(breed);
     }
 
     query.location = {
       $near: {
         $geometry: {
-          type: "Point",
-          coordinates: [lng, lat]
+          type: 'Point',
+          coordinates: [lng, lat],
         },
-        $maxDistance: radius * 1000
-      }
+        $maxDistance: radius * 1000,
+      },
     };
 
-    return await this.communityPostModel.find(query)
-      .select("location type ai_metadata photos createdAt _id title contact_info")
+    return await this.communityPostModel
+      .find(query)
+      .select(
+        'location type ai_metadata photos createdAt _id title contact_info',
+      )
       .limit(50);
   }
 
   async getPostById(id: string): Promise<CommunityPostDoc | null> {
-    const post = await this.communityPostModel.findByIdAndUpdate(
-      id,
-      { $inc: { views: 1 } },
-      { new: true }
-    ).populate("dog_id");
+    const post = await this.communityPostModel
+      .findByIdAndUpdate(id, { $inc: { views: 1 } }, { new: true })
+      .populate('dog_id');
     return post;
   }
 
-  async updatePost(id: string, authorId: string, updateData: Partial<CommunityPostDoc>): Promise<CommunityPostDoc> {
+  async updatePost(
+    id: string,
+    authorId: string,
+    updateData: Partial<CommunityPostDoc>,
+  ): Promise<CommunityPostDoc> {
     const post = await this.communityPostModel.findById(id);
-    if (!post) throw new NotFoundException("Post not found");
-    if (!post.author_id || post.author_id.toString() !== authorId) throw new UnauthorizedException();
+    if (!post) throw new NotFoundException('Post not found');
+    if (!post.author_id || post.author_id.toString() !== authorId)
+      throw new UnauthorizedException();
 
     Object.assign(post, updateData);
     await post.save();
@@ -266,23 +324,30 @@ export class PostService {
 
   async deletePost(id: string, authorId: string): Promise<void> {
     const post = await this.communityPostModel.findById(id);
-    if (!post) throw new NotFoundException("Post not found");
-    if (!post.author_id || post.author_id.toString() !== authorId) throw new UnauthorizedException();
+    if (!post) throw new NotFoundException('Post not found');
+    if (!post.author_id || post.author_id.toString() !== authorId)
+      throw new UnauthorizedException();
 
     await post.deleteOne();
   }
 
-  async markAsResolved(id: string, authorId: string): Promise<CommunityPostDoc> {
+  async markAsResolved(
+    id: string,
+    authorId: string,
+  ): Promise<CommunityPostDoc> {
     const post = await this.communityPostModel.findById(id);
-    if (!post) throw new NotFoundException("Post not found");
-    if (!post.author_id || post.author_id.toString() !== authorId) throw new UnauthorizedException();
+    if (!post) throw new NotFoundException('Post not found');
+    if (!post.author_id || post.author_id.toString() !== authorId)
+      throw new UnauthorizedException();
 
     post.status = PostStatus.RESOLVED;
     post.isDeleted = true;
     await post.save();
 
     if (post.type === PostType.LOST && post.dog_id) {
-      await this.dogProfileModel.findByIdAndUpdate(post.dog_id, { isLost: false });
+      await this.dogProfileModel.findByIdAndUpdate(post.dog_id, {
+        isLost: false,
+      });
     }
 
     return post;
@@ -294,9 +359,9 @@ export class PostService {
       {
         $set: {
           status: PostStatus.RESOLVED,
-          isDeleted: true
-        }
-      }
+          isDeleted: true,
+        },
+      },
     );
   }
 }

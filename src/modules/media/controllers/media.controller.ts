@@ -17,12 +17,18 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
-import { ApiTags, ApiOperation, ApiBearerAuth, ApiConsumes } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiBearerAuth,
+  ApiConsumes,
+} from '@nestjs/swagger';
 
 import { MediaService } from '../services/media.service';
 import { DirectoryService } from '../services/directory.service';
 import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../../../common/decorators/current-user.decorator';
+import { mediaUploadOptions } from '../../../common/config/upload.config';
 
 @ApiTags('Media')
 @Controller('api/medias')
@@ -35,7 +41,7 @@ export class MediaController {
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
   @Post('upload')
-  @UseInterceptors(FileInterceptor('file'))
+  @UseInterceptors(FileInterceptor('file', mediaUploadOptions))
   @ApiConsumes('multipart/form-data')
   @ApiOperation({ summary: 'Upload single media file' })
   async uploadFile(
@@ -61,7 +67,7 @@ export class MediaController {
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
   @Post('upload-multiple')
-  @UseInterceptors(FilesInterceptor('files', 10))
+  @UseInterceptors(FilesInterceptor('files', 10, mediaUploadOptions))
   @ApiConsumes('multipart/form-data')
   @ApiOperation({ summary: 'Upload multiple media files' })
   async uploadMultiple(
@@ -86,7 +92,10 @@ export class MediaController {
       ),
     );
 
-    return { message: `Đã tải lên ${uploaded.length} tệp thành công`, medias: uploaded };
+    return {
+      message: `Đã tải lên ${uploaded.length} tệp thành công`,
+      medias: uploaded,
+    };
   }
 
   @ApiBearerAuth()
@@ -94,13 +103,14 @@ export class MediaController {
   @Get()
   @ApiOperation({ summary: 'List media files with filter and pagination' })
   async getMedias(
+    @CurrentUser('userId') userId: string,
     @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
     @Query('limit', new DefaultValuePipe(20), ParseIntPipe) limit: number,
     @Query('search') search?: string,
     @Query('type') type?: string,
     @Query('directory_id') directoryId?: string,
   ) {
-    return this.mediaService.findAndPaginate({
+    return this.mediaService.findAndPaginate(userId, {
       page,
       limit,
       search,
@@ -114,10 +124,15 @@ export class MediaController {
   @Patch(':id/move')
   @ApiOperation({ summary: 'Move media file to another directory' })
   async moveMedia(
+    @CurrentUser('userId') userId: string,
     @Param('id') mediaId: string,
     @Body('newDirectoryId') newDirectoryId: string | null,
   ) {
-    const updated = await this.mediaService.moveMedia(mediaId, newDirectoryId);
+    const updated = await this.mediaService.moveMedia(
+      mediaId,
+      userId,
+      newDirectoryId,
+    );
     if (!updated) {
       throw new NotFoundException('Không tìm thấy tệp phương tiện.');
     }
@@ -128,8 +143,11 @@ export class MediaController {
   @UseGuards(JwtAuthGuard)
   @Delete(':id')
   @ApiOperation({ summary: 'Soft delete media file' })
-  async deleteMedia(@Param('id') mediaId: string) {
-    const deleted = await this.mediaService.softDeleteMedia(mediaId);
+  async deleteMedia(
+    @Param('id') mediaId: string,
+    @CurrentUser('userId') userId: string,
+  ) {
+    const deleted = await this.mediaService.softDeleteMedia(mediaId, userId);
     if (!deleted) {
       throw new NotFoundException('Không tìm thấy tệp phương tiện để xóa.');
     }
@@ -152,7 +170,10 @@ export class MediaController {
     if (!name) {
       throw new BadRequestException('Tên thư mục không được để trống.');
     }
-    return this.directoryService.create({ name, parent_id: parentId || null }, userId);
+    return this.directoryService.create(
+      { name, parent_id: parentId || null },
+      userId,
+    );
   }
 
   @ApiBearerAuth()
@@ -160,8 +181,9 @@ export class MediaController {
   @Get('directories')
   @ApiOperation({ summary: 'Get directory folders for user' })
   async getDirectories(
+    @CurrentUser('userId') userId: string,
     @Query('parent_id') parentId?: string,
   ) {
-    return this.directoryService.getChildren(parentId || null);
+    return this.directoryService.getChildren(userId, parentId || null);
   }
 }

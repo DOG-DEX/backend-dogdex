@@ -6,7 +6,9 @@ import { ModerationController } from './controllers/moderation.controller';
 
 @Module({
   imports: [
-    MongooseModule.forFeature([{ name: 'ModerationReport', schema: ModerationReportModel.schema }]),
+    MongooseModule.forFeature([
+      { name: 'ModerationReport', schema: ModerationReportModel.schema },
+    ]),
   ],
   controllers: [ModerationController],
   providers: [ModerationService],

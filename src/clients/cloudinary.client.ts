@@ -12,7 +12,9 @@ export class CloudinaryClient {
     const apiSecret = this.configService.get<string>('CLOUDINARY_API_SECRET');
 
     if (!cloudName || !apiKey || !apiSecret) {
-      this.logger.warn('Cloudinary config is incomplete in the environment variables');
+      this.logger.warn(
+        'Cloudinary config is incomplete in the environment variables',
+      );
     } else {
       cloudinary.config({
         cloud_name: cloudName,

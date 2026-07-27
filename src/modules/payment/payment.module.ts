@@ -16,10 +16,10 @@ import { PaymentController } from './controllers/payment.controller';
       { name: 'Subscription', schema: SubscriptionModel.schema },
       { name: 'Transaction', schema: TransactionModel.schema },
       { name: 'User', schema: UserModel.schema },
-    ])
+    ]),
   ],
   controllers: [PaymentController],
   providers: [PlanService, SubscriptionService, MomoService],
-  exports: [PlanService, SubscriptionService, MomoService]
+  exports: [PlanService, SubscriptionService, MomoService],
 })
 export class PaymentModule {}

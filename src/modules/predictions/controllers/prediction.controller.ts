@@ -16,7 +16,12 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
-import { ApiTags, ApiOperation, ApiBearerAuth, ApiConsumes } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiBearerAuth,
+  ApiConsumes,
+} from '@nestjs/swagger';
 import type { Request } from 'express';
 
 import { PredictionService } from '../services/prediction.service';
@@ -25,6 +30,11 @@ import { AIModelService } from '../services/ai-model.service';
 import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
 import { Public } from '../../../common/decorators/public.decorator';
 import { CurrentUser } from '../../../common/decorators/current-user.decorator';
+import {
+  imageUploadOptions,
+  mediaUploadOptions,
+} from '../../../common/config/upload.config';
+import { Throttle } from '@nestjs/throttler';
 
 @ApiTags('Predictions')
 @Controller('api/predictions')
@@ -36,8 +46,9 @@ export class PredictionController {
   ) {}
 
   @Public()
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @Post('predict')
-  @UseInterceptors(FileInterceptor('file'))
+  @UseInterceptors(FileInterceptor('file', mediaUploadOptions))
   @ApiConsumes('multipart/form-data')
   @ApiOperation({ summary: 'Predict dog breed from image or video file' })
   async predictFile(
@@ -47,14 +58,17 @@ export class PredictionController {
     @CurrentUser('userId') userId?: string,
   ) {
     if (!file) {
-      throw new BadRequestException('Vui lòng tải lên 1 tệp hình ảnh hoặc video.');
+      throw new BadRequestException(
+        'Vui lòng tải lên 1 tệp hình ảnh hoặc video.',
+      );
     }
     return this.predictionService.makePrediction(userId, file, type, req);
   }
 
   @Public()
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @Post('predict/ephemeral')
-  @UseInterceptors(FileInterceptor('file'))
+  @UseInterceptors(FileInterceptor('file', imageUploadOptions))
   @ApiConsumes('multipart/form-data')
   @ApiOperation({ summary: 'Instant prediction without saving to database' })
   async predictEphemeral(
@@ -68,8 +82,9 @@ export class PredictionController {
   }
 
   @Public()
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
   @Post('predict/batch')
-  @UseInterceptors(FilesInterceptor('files', 10))
+  @UseInterceptors(FilesInterceptor('files', 10, mediaUploadOptions))
   @ApiConsumes('multipart/form-data')
   @ApiOperation({ summary: 'Batch predictions for multiple files' })
   async predictBatch(
@@ -84,6 +99,7 @@ export class PredictionController {
   }
 
   @Public()
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @Post('predict/url')
   @ApiOperation({ summary: 'Predict dog breed from image URL or base64 data' })
   async predictUrl(
@@ -98,6 +114,7 @@ export class PredictionController {
   }
 
   @Public()
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @Post('predict/stream')
   @ApiOperation({ summary: 'Save prediction from live stream capture' })
   async saveStreamPrediction(
@@ -129,7 +146,11 @@ export class PredictionController {
     @Query('limit', new DefaultValuePipe(20), ParseIntPipe) limit: number,
     @Query('search') search?: string,
   ) {
-    return this.historyService.getHistoryForUser(userId, { page, limit, search });
+    return this.historyService.getHistoryForUser(userId, {
+      page,
+      limit,
+      search,
+    });
   }
 
   @ApiBearerAuth()

@@ -9,9 +9,20 @@ dotenv.config();
 
 export type AccessMode = 'public' | 'private';
 
-const PRIVATE_FOLDERS = ['health_records', 'verification', 'processed/', 'uploads/'];
+const PRIVATE_FOLDERS = [
+  'health_records',
+  'verification',
+  'processed/',
+  'uploads/',
+];
 
-const PUBLIC_FOLDERS = ['avatars', 'wiki', 'dataset/approved', 'dog-data-img', 'posts'];
+const PUBLIC_FOLDERS = [
+  'avatars',
+  'wiki',
+  'dataset/approved',
+  'dog-data-img',
+  'posts',
+];
 
 const isPublicFolder = (pathOrFolder: string): boolean => {
   const normalized = pathOrFolder.replace(/\\/g, '/').toLowerCase();

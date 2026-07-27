@@ -1,9 +1,22 @@
-import { Controller, Get, Put, Delete, Body, Param, Query, UseGuards, Req, ParseIntPipe, DefaultValuePipe } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Put,
+  Delete,
+  Body,
+  Param,
+  Query,
+  UseGuards,
+  Req,
+  ParseIntPipe,
+  DefaultValuePipe,
+} from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { UserService } from '../services/user.service';
 import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../../common/guards/roles.guard';
 import { Roles } from '../../../common/decorators/roles.decorator';
+import { UpdateProfileDto } from '../dto/update-profile.dto';
 
 @ApiTags('Users')
 @ApiBearerAuth()
@@ -20,7 +33,7 @@ export class UserController {
 
   @Put('profile')
   @ApiOperation({ summary: 'Update user profile' })
-  async updateProfile(@Req() req: any, @Body() updateData: any) {
+  async updateProfile(@Req() req: any, @Body() updateData: UpdateProfileDto) {
     return this.userService.updateUserById(req.user.userId, updateData);
   }
 

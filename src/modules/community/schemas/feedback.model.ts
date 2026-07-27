@@ -1,4 +1,4 @@
-import mongoose, { Schema, Document, Types } from "mongoose";
+import mongoose, { Schema, Document, Types } from 'mongoose';
 
 export interface FeedbackDoc extends Document {
   prediction_id: Types.ObjectId;
@@ -9,7 +9,7 @@ export interface FeedbackDoc extends Document {
   file_path: string;
   admin_id: Types.ObjectId;
   reason?: string;
-  status: "pending_review" | "approved_for_training" | "rejected";
+  status: 'pending_review' | 'approved_for_training' | 'rejected';
   isDeleted: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -19,21 +19,21 @@ const feedbackSchema = new Schema<FeedbackDoc>(
   {
     prediction_id: {
       type: Schema.Types.ObjectId,
-      ref: "PredictionHistory",
+      ref: 'PredictionHistory',
       required: true,
       unique: true,
     },
-    user_id: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    user_id: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     isCorrect: { type: Boolean, required: true },
     user_submitted_label: { type: String, trim: true },
     notes: { type: String, trim: true },
     status: {
       type: String,
-      enum: ["pending_review", "approved_for_training", "rejected"],
-      default: "pending_review",
+      enum: ['pending_review', 'approved_for_training', 'rejected'],
+      default: 'pending_review',
     },
     file_path: { type: String, required: true },
-    admin_id: { type: Schema.Types.ObjectId, ref: "User" },
+    admin_id: { type: Schema.Types.ObjectId, ref: 'User' },
     reason: { type: String, trim: true },
     isDeleted: {
       type: Boolean,
@@ -41,8 +41,8 @@ const feedbackSchema = new Schema<FeedbackDoc>(
     },
   },
   {
-    timestamps: { createdAt: "createdAt", updatedAt: "updatedAt" },
-    collection: "feedbacks",
+    timestamps: { createdAt: 'createdAt', updatedAt: 'updatedAt' },
+    collection: 'feedbacks',
     toJSON: {
       virtuals: true,
       transform(doc: any, ret: any) {
@@ -54,12 +54,12 @@ const feedbackSchema = new Schema<FeedbackDoc>(
     toObject: {
       virtuals: true,
     },
-  }
+  },
 );
 
 feedbackSchema.index({ user_submitted_label: 1, status: 1 });
 
 export const FeedbackModel = mongoose.model<FeedbackDoc>(
-  "Feedback",
-  feedbackSchema
+  'Feedback',
+  feedbackSchema,
 );

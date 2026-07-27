@@ -1,11 +1,45 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards, Req, UseInterceptors, UploadedFile } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Delete,
+  Body,
+  Param,
+  Query,
+  UseGuards,
+  Req,
+  ParseEnumPipe,
+  UseInterceptors,
+  UploadedFile,
+} from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { ApiTags, ApiOperation, ApiBearerAuth, ApiConsumes } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiBearerAuth,
+  ApiConsumes,
+} from '@nestjs/swagger';
 import type { Request } from 'express';
 
 import { DogService } from '../services/dog.service';
 import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
 import { Public } from '../../../common/decorators/public.decorator';
+import { CurrentUser } from '../../../common/decorators/current-user.decorator';
+import { imageUploadOptions } from '../../../common/config/upload.config';
+import {
+  ContactOwnerDto,
+  CreateDogDto,
+  CreateHealthRecordDto,
+  FinderContactDto,
+  LocationDto,
+  ReportFoundVerificationType,
+  ReportLostDto,
+  SearchLostDogsQueryDto,
+  UpdateDogDto,
+  UpdateHealthRecordDto,
+} from '../dto/dog.dto';
+import { ParseJsonDtoPipe } from '../../../common/pipes/parse-json-dto.pipe';
 
 @ApiTags('Dogs')
 @ApiBearerAuth()
@@ -16,20 +50,23 @@ export class DogController {
 
   @Post()
   @ApiOperation({ summary: 'Add a new dog profile' })
-  async createDog(@Req() req: any, @Body() data: any) {
-    return this.dogService.createDog(data, req.user.userId);
+  async createDog(
+    @CurrentUser('userId') userId: string,
+    @Body() data: CreateDogDto,
+  ) {
+    return this.dogService.createDog(data, userId);
   }
 
   @Get('my-dogs')
   @ApiOperation({ summary: 'Get current user dogs' })
-  async getMyDogs(@Req() req: any) {
-    return this.dogService.getDogsByOwner(req.user.userId);
+  async getMyDogs(@CurrentUser('userId') userId: string) {
+    return this.dogService.getDogsByOwner(userId);
   }
 
   @Public()
   @Get('search/lost')
   @ApiOperation({ summary: 'Search lost dogs' })
-  async searchLostDogs(@Query() filters: any) {
+  async searchLostDogs(@Query() filters: SearchLostDogsQueryDto) {
     return this.dogService.searchLostDogs(filters);
   }
 
@@ -39,39 +76,61 @@ export class DogController {
 
   @Public()
   @Get('public/:id')
-  @ApiOperation({ summary: 'Get public dog profile when scanning QR collar (Triggers email alert if lost)' })
+  @ApiOperation({
+    summary:
+      'Get public dog profile when scanning QR collar (Triggers email alert if lost)',
+  })
   async getPublicDogInfo(@Param('id') id: string, @Req() req: Request) {
     return this.dogService.getPublicDogInfo(id, req);
   }
 
   @Public()
   @Post('contact-owner')
-  @ApiOperation({ summary: 'Send email notification to owner when someone scans QR / finds dog' })
-  async contactOwner(@Body() body: { dogId: string; finderName: string; finderPhone: string; message?: string; location?: any }) {
-    await this.dogService.contactOwner(body.dogId, body.finderName, body.finderPhone, body.message, body.location);
+  @ApiOperation({
+    summary:
+      'Send email notification to owner when someone scans QR / finds dog',
+  })
+  async contactOwner(
+    @Body()
+    body: ContactOwnerDto,
+  ) {
+    await this.dogService.contactOwner(
+      body.dogId,
+      body.finderName,
+      body.finderPhone,
+      body.message,
+      body.location,
+    );
     return { message: 'Email sent to owner successfully' };
   }
 
   @Public()
   @Post('report-found')
-  @UseInterceptors(FileInterceptor('file'))
+  @UseInterceptors(FileInterceptor('file', imageUploadOptions))
   @ApiConsumes('multipart/form-data')
-  @ApiOperation({ summary: 'Report dog found with QR code or Camera AI verification' })
+  @ApiOperation({
+    summary: 'Report dog found with QR code or Camera AI verification',
+  })
   async reportFoundWithVerification(
     @Req() req: Request,
-    @Body() body: any,
+    @Body('dogId') dogId: string,
+    @Body(
+      'verificationType',
+      new ParseEnumPipe(ReportFoundVerificationType, { optional: true }),
+    )
+    verificationType: ReportFoundVerificationType = ReportFoundVerificationType.QR,
+    @Body('contact', new ParseJsonDtoPipe(FinderContactDto))
+    contact: FinderContactDto,
+    @Body('location', new ParseJsonDtoPipe(LocationDto))
+    location: LocationDto,
     @UploadedFile() file?: Express.Multer.File,
   ) {
-    const { dogId, verificationType, contact, location } = body;
-    const parsedContact = typeof contact === 'string' ? JSON.parse(contact) : contact;
-    const parsedLocation = typeof location === 'string' ? JSON.parse(location) : location;
-
     return this.dogService.reportFoundWithVerification(
       req,
       dogId,
-      verificationType || 'qr',
-      parsedContact,
-      parsedLocation,
+      verificationType,
+      contact,
+      location,
       file,
     );
   }
@@ -87,48 +146,79 @@ export class DogController {
 
   @Put(':id')
   @ApiOperation({ summary: 'Update dog profile' })
-  async updateDog(@Req() req: any, @Param('id') id: string, @Body() data: any) {
-    return this.dogService.updateDog(id, req.user.userId, data);
+  async updateDog(
+    @CurrentUser('userId') userId: string,
+    @Param('id') id: string,
+    @Body() data: UpdateDogDto,
+  ) {
+    return this.dogService.updateDog(id, userId, data);
   }
 
   @Delete(':id')
   @ApiOperation({ summary: 'Delete dog profile' })
-  async deleteDog(@Req() req: any, @Param('id') id: string) {
-    await this.dogService.deleteDog(id, req.user.userId);
+  async deleteDog(
+    @CurrentUser('userId') userId: string,
+    @Param('id') id: string,
+  ) {
+    await this.dogService.deleteDog(id, userId);
     return { message: 'Xóa hồ sơ thú cưng thành công' };
   }
 
   @Post(':id/report-lost')
   @ApiOperation({ summary: 'Report dog as lost' })
-  async reportLost(@Req() req: any, @Param('id') id: string, @Body() body: any) {
+  async reportLost(
+    @CurrentUser('userId') userId: string,
+    @Param('id') id: string,
+    @Body() body: ReportLostDto,
+  ) {
     const { location, contact, additionalInfo } = body;
-    return this.dogService.reportLost(id, req.user.userId, location, contact, additionalInfo);
+    return this.dogService.reportLost(
+      id,
+      userId,
+      location,
+      contact,
+      additionalInfo,
+    );
   }
 
   // --- Health Records ---
 
   @Post(':id/health-records')
   @ApiOperation({ summary: 'Add health record' })
-  async addHealthRecord(@Req() req: any, @Param('id') id: string, @Body() data: any) {
-    return this.dogService.addHealthRecord(id, req.user.userId, data);
+  async addHealthRecord(
+    @CurrentUser('userId') userId: string,
+    @Param('id') id: string,
+    @Body() data: CreateHealthRecordDto,
+  ) {
+    return this.dogService.addHealthRecord(id, userId, data);
   }
 
   @Get(':id/health-records')
   @ApiOperation({ summary: 'Get health records' })
-  async getHealthRecords(@Param('id') id: string) {
-    return this.dogService.getHealthRecords(id);
+  async getHealthRecords(
+    @CurrentUser('userId') userId: string,
+    @Param('id') id: string,
+  ) {
+    return this.dogService.getHealthRecords(id, userId);
   }
 
   @Put('health-records/:recordId')
   @ApiOperation({ summary: 'Update health record' })
-  async updateHealthRecord(@Req() req: any, @Param('recordId') recordId: string, @Body() data: any) {
-    return this.dogService.updateHealthRecord(recordId, req.user.userId, data);
+  async updateHealthRecord(
+    @CurrentUser('userId') userId: string,
+    @Param('recordId') recordId: string,
+    @Body() data: UpdateHealthRecordDto,
+  ) {
+    return this.dogService.updateHealthRecord(recordId, userId, data);
   }
 
   @Delete('health-records/:recordId')
   @ApiOperation({ summary: 'Delete health record' })
-  async deleteHealthRecord(@Req() req: any, @Param('recordId') recordId: string) {
-    await this.dogService.deleteHealthRecord(recordId, req.user.userId);
+  async deleteHealthRecord(
+    @CurrentUser('userId') userId: string,
+    @Param('recordId') recordId: string,
+  ) {
+    await this.dogService.deleteHealthRecord(recordId, userId);
     return { message: 'Xóa hồ sơ sức khỏe thành công' };
   }
 }

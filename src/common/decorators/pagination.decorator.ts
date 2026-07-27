@@ -8,7 +8,10 @@ export interface PaginationParams {
 }
 
 export const Pagination = createParamDecorator(
-  (options: { defaultLimit?: number; maxLimit?: number } = {}, ctx: ExecutionContext): PaginationParams => {
+  (
+    options: { defaultLimit?: number; maxLimit?: number } = {},
+    ctx: ExecutionContext,
+  ): PaginationParams => {
     const request = ctx.switchToHttp().getRequest();
     const query = request.query || {};
 
@@ -25,7 +28,8 @@ export const Pagination = createParamDecorator(
     }
 
     const skip = (page - 1) * limit;
-    const search = typeof query.search === 'string' ? query.search.trim() : undefined;
+    const search =
+      typeof query.search === 'string' ? query.search.trim() : undefined;
 
     return { page, limit, skip, search };
   },

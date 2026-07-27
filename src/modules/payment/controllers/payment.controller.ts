@@ -1,4 +1,17 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards, ParseIntPipe, DefaultValuePipe, BadRequestException } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Delete,
+  Body,
+  Param,
+  Query,
+  UseGuards,
+  ParseIntPipe,
+  DefaultValuePipe,
+  BadRequestException,
+} from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { PlanService, IPlanQuery } from '../services/plan.service';
 import { SubscriptionService } from '../services/subscription.service';
@@ -7,6 +20,7 @@ import { RolesGuard } from '../../../common/guards/roles.guard';
 import { Roles } from '../../../common/decorators/roles.decorator';
 import { Public } from '../../../common/decorators/public.decorator';
 import { CurrentUser } from '../../../common/decorators/current-user.decorator';
+import { CheckoutDto } from '../dto/checkout.dto';
 
 @ApiTags('Plans')
 @Controller('api/plans')
@@ -82,15 +96,18 @@ export class PaymentController {
   @ApiOperation({ summary: 'Create Momo Checkout Session' })
   async createCheckoutSession(
     @CurrentUser('userId') currentUserId: string,
-    @Body() body: any,
+    @Body() body: CheckoutDto,
     @Query('userId') queryUserId?: string,
   ) {
     const userId = currentUserId || queryUserId;
     if (!userId) {
       throw new BadRequestException('Vui lòng đăng nhập để thanh toán.');
     }
-    const { planSlug, billingPeriod } = body;
-    return this.subscriptionService.createCheckoutSession(userId, planSlug, billingPeriod);
+    return this.subscriptionService.createCheckoutSession(
+      userId,
+      body.planSlug,
+      body.billingPeriod,
+    );
   }
 
   @Public()

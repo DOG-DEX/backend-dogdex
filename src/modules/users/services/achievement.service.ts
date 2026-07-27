@@ -13,7 +13,8 @@ export class AchievementService {
   constructor(
     @InjectModel('Achievement') private achievementModel: Model<AchievementDoc>,
     @InjectModel('User') private userModel: Model<UserDoc>,
-    @InjectModel('UserCollection') private userCollectionModel: Model<UserCollectionDoc>,
+    @InjectModel('UserCollection')
+    private userCollectionModel: Model<UserCollectionDoc>,
     @InjectModel('DogBreedWikiEn') private wikiEnModel: Model<DogBreedWikiDoc>,
     @InjectModel('DogBreedWikiVi') private wikiViModel: Model<DogBreedWikiDoc>,
   ) {}
@@ -22,19 +23,32 @@ export class AchievementService {
     const user = await this.userModel.findById(userId);
     if (!user) return [];
 
-    const userCollection = await this.userCollectionModel.findOne({ user_id: new Types.ObjectId(userId), isDeleted: { $ne: true } });
-    const userCollections = userCollection ? userCollection.collectedBreeds : [];
+    const userCollection = await this.userCollectionModel.findOne({
+      user_id: new Types.ObjectId(userId),
+      isDeleted: { $ne: true },
+    });
+    const userCollections = userCollection
+      ? userCollection.collectedBreeds
+      : [];
 
     const wikiModel = lang === 'vi' ? this.wikiViModel : this.wikiEnModel;
-    const totalBreedsInDB = await wikiModel.countDocuments({ isDeleted: { $ne: true } });
-    const allAchievements = await this.achievementModel.find({ isDeleted: { $ne: true } });
+    const totalBreedsInDB = await wikiModel.countDocuments({
+      isDeleted: { $ne: true },
+    });
+    const allAchievements = await this.achievementModel.find({
+      isDeleted: { $ne: true },
+    });
 
-    const unlockedKeys = new Set((user.achievements || []).map((ach) => ach.key));
+    const unlockedKeys = new Set(
+      (user.achievements || []).map((ach) => ach.key),
+    );
 
     const collectedBreedDetails = await wikiModel
       .find({ _id: { $in: userCollections.map((uc) => uc.breed_id) } })
       .select('slug');
-    const collectedBreedSlugs = new Set(collectedBreedDetails.map((b) => b.slug));
+    const collectedBreedSlugs = new Set(
+      collectedBreedDetails.map((b) => b.slug),
+    );
     const collectionCount = userCollections.length;
 
     const achievementsWithStatus = allAchievements.map((ach) => {
@@ -57,10 +71,13 @@ export class AchievementService {
           isNewlyUnlocked = collectionCount >= ach.condition.value;
           break;
         case 'rare_breed':
-          isNewlyUnlocked = collectedBreedSlugs.has(ach.condition.breedSlug || '');
+          isNewlyUnlocked = collectedBreedSlugs.has(
+            ach.condition.breedSlug || '',
+          );
           break;
         case 'all_breeds':
-          isNewlyUnlocked = collectionCount >= (totalBreedsInDB || ach.condition.value);
+          isNewlyUnlocked =
+            collectionCount >= (totalBreedsInDB || ach.condition.value);
           break;
         default:
           isNewlyUnlocked = false;
@@ -69,11 +86,21 @@ export class AchievementService {
       return { ...flattened, unlocked: isNewlyUnlocked };
     });
 
-    const newlyUnlocked = achievementsWithStatus.filter((ach) => ach.unlocked && !unlockedKeys.has(ach.key));
+    const newlyUnlocked = achievementsWithStatus.filter(
+      (ach) => ach.unlocked && !unlockedKeys.has(ach.key),
+    );
     if (newlyUnlocked.length > 0) {
-      const newEntries = newlyUnlocked.map((ach) => ({ key: ach.key, unlockedAt: new Date() }));
-      await this.userModel.updateOne({ _id: user._id }, { $push: { achievements: { $each: newEntries } } });
-      this.logger.log(`User ${user.username} unlocked ${newlyUnlocked.length} new achievements.`);
+      const newEntries = newlyUnlocked.map((ach) => ({
+        key: ach.key,
+        unlockedAt: new Date(),
+      }));
+      await this.userModel.updateOne(
+        { _id: user._id },
+        { $push: { achievements: { $each: newEntries } } },
+      );
+      this.logger.log(
+        `User ${user.username} unlocked ${newlyUnlocked.length} new achievements.`,
+      );
     }
 
     return achievementsWithStatus;

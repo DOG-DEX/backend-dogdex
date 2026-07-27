@@ -11,8 +11,10 @@ import { MediaDoc } from '../../media/schemas/medias.model';
 export class AdminService {
   constructor(
     @InjectModel('User') private userModel: Model<UserDoc>,
-    @InjectModel('PredictionHistory') private historyModel: Model<PredictionHistoryDoc>,
-    @InjectModel('AnalyticsEvent') private analyticsModel: Model<AnalyticsEventDoc>,
+    @InjectModel('PredictionHistory')
+    private historyModel: Model<PredictionHistoryDoc>,
+    @InjectModel('AnalyticsEvent')
+    private analyticsModel: Model<AnalyticsEventDoc>,
     @InjectModel('Media') private mediaModel: Model<MediaDoc>,
   ) {}
 
@@ -23,15 +25,21 @@ export class AdminService {
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
-    const [totalUsers, totalPredictions, todayPredictions, totalMedias] = await Promise.all([
-      this.userModel.countDocuments({ isDeleted: { $ne: true } }),
-      this.historyModel.countDocuments({ isDeleted: { $ne: true } }),
-      this.historyModel.countDocuments({ createdAt: { $gte: today }, isDeleted: { $ne: true } }),
-      this.mediaModel.countDocuments({ isDeleted: { $ne: true } }),
-    ]);
+    const [totalUsers, totalPredictions, todayPredictions, totalMedias] =
+      await Promise.all([
+        this.userModel.countDocuments({ isDeleted: { $ne: true } }),
+        this.historyModel.countDocuments({ isDeleted: { $ne: true } }),
+        this.historyModel.countDocuments({
+          createdAt: { $gte: today },
+          isDeleted: { $ne: true },
+        }),
+        this.mediaModel.countDocuments({ isDeleted: { $ne: true } }),
+      ]);
 
     const weeklyActivity = await this.historyModel.aggregate([
-      { $match: { createdAt: { $gte: sevenDaysAgo }, isDeleted: { $ne: true } } },
+      {
+        $match: { createdAt: { $gte: sevenDaysAgo }, isDeleted: { $ne: true } },
+      },
       {
         $group: {
           _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } },
@@ -68,23 +76,36 @@ export class AdminService {
 
     if (search) {
       const searchRegex = { $regex: search, $options: 'i' };
-      filter.$or = [{ username: searchRegex }, { email: searchRegex }, { full_name: searchRegex }];
+      filter.$or = [
+        { username: searchRegex },
+        { email: searchRegex },
+        { full_name: searchRegex },
+      ];
     }
 
-    const users = await this.userModel.find(filter).select('-password').sort({ createdAt: -1 }).skip(skip).limit(limit);
+    const users = await this.userModel
+      .find(filter)
+      .select('-password')
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
     const total = await this.userModel.countDocuments(filter);
 
     return { users, total, page, limit, totalPages: Math.ceil(total / limit) };
   }
 
   async updateUserRole(userId: string, role: string) {
-    const user = await this.userModel.findByIdAndUpdate(userId, { role }, { new: true }).select('-password');
+    const user = await this.userModel
+      .findByIdAndUpdate(userId, { role }, { new: true })
+      .select('-password');
     if (!user) throw new NotFoundException('Không tìm thấy người dùng.');
     return user;
   }
 
   async toggleUserBlock(userId: string, isBlocked: boolean) {
-    const user = await this.userModel.findByIdAndUpdate(userId, { isBlocked }, { new: true }).select('-password');
+    const user = await this.userModel
+      .findByIdAndUpdate(userId, { isBlocked }, { new: true })
+      .select('-password');
     if (!user) throw new NotFoundException('Không tìm thấy người dùng.');
     return user;
   }

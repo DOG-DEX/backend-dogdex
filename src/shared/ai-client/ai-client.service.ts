@@ -63,14 +63,23 @@ export class AIClientService extends EventEmitter {
 
     this.videoQueue = new Queue('video-batch-queue', options);
     this.queueEvents = new QueueEvents('video-batch-queue', options);
-    this.videoWorker = new Worker('video-batch-queue', (job) => this.processVideoJob(job), {
-      ...options,
-      concurrency: 2,
-    });
+    this.videoWorker = new Worker(
+      'video-batch-queue',
+      (job) => this.processVideoJob(job),
+      {
+        ...options,
+        concurrency: 2,
+      },
+    );
 
     this.videoWorker.on('progress', (job, progress) => {
       if (job) {
-        this.updateProgress(job.id as string, 'processing', progress as number, 'Processing...');
+        this.updateProgress(
+          job.id as string,
+          'processing',
+          progress as number,
+          'Processing...',
+        );
         predictionNotifier.notify(job.id as string, 'progress', { progress });
       }
     });
@@ -83,20 +92,30 @@ export class AIClientService extends EventEmitter {
     this.videoWorker.on('failed', (job, err) => {
       if (job) {
         this.updateProgress(job.id as string, 'failed', 0, err.message);
-        predictionNotifier.notify(job.id as string, 'failed', { message: err.message });
+        predictionNotifier.notify(job.id as string, 'failed', {
+          message: err.message,
+        });
       }
     });
   }
 
-  private updateProgress(id: string, status: PredictionProgress['status'], progress = 0, message = '', result?: any) {
+  private updateProgress(
+    id: string,
+    status: PredictionProgress['status'],
+    progress = 0,
+    message = '',
+    result?: any,
+  ) {
     this.progressMap.set(id, { status, progress, message, result });
   }
 
   getProgress(predictionId: string): PredictionProgress {
-    return this.progressMap.get(predictionId) || {
-      status: 'not_found',
-      message: 'Prediction not found',
-    };
+    return (
+      this.progressMap.get(predictionId) || {
+        status: 'not_found',
+        message: 'Prediction not found',
+      }
+    );
   }
 
   async predict(item: BatchItem): Promise<any> {
@@ -112,7 +131,10 @@ export class AIClientService extends EventEmitter {
     } else if (this.batches[batchKey].length >= this.maxBatchSize) {
       this.processBatch(batchKey);
     } else if (!this.timers[batchKey]) {
-      this.timers[batchKey] = setTimeout(() => this.processBatch(batchKey), this.maxWaitTime);
+      this.timers[batchKey] = setTimeout(
+        () => this.processBatch(batchKey),
+        this.maxWaitTime,
+      );
     }
 
     return new Promise((resolve, reject) => {
@@ -136,7 +158,12 @@ export class AIClientService extends EventEmitter {
       throw new Error('No file or buffer provided');
     }
 
-    this.updateProgress(item.id, 'queued', 0, 'Waiting for video processing...');
+    this.updateProgress(
+      item.id,
+      'queued',
+      0,
+      'Waiting for video processing...',
+    );
     const job = await this.videoQueue.add(
       'process-video',
       { id: item.id, filePath, originalName: item.originalName, cleanupNeeded },
@@ -150,7 +177,9 @@ export class AIClientService extends EventEmitter {
     await job.updateProgress(10);
     try {
       const formData = new FormData();
-      formData.append('file', fs.createReadStream(filePath), { filename: originalName || 'video.mp4' });
+      formData.append('file', fs.createReadStream(filePath), {
+        filename: originalName || 'video.mp4',
+      });
       await job.updateProgress(20);
       const response = await this.withRetry(() =>
         axios.post(`${AI_SERVICE_URL}/predict/video`, formData, {
@@ -168,7 +197,10 @@ export class AIClientService extends EventEmitter {
   }
 
   private async processBatch(batchKey: string) {
-    if (this.timers[batchKey]) { clearTimeout(this.timers[batchKey]); delete this.timers[batchKey]; }
+    if (this.timers[batchKey]) {
+      clearTimeout(this.timers[batchKey]);
+      delete this.timers[batchKey];
+    }
     if (!this.batches[batchKey]?.length) return;
 
     const batch = this.batches[batchKey];
@@ -177,16 +209,28 @@ export class AIClientService extends EventEmitter {
     try {
       const formData = new FormData();
       batch.forEach((item) => {
-        if (item.buffer) formData.append('files', item.buffer, { filename: item.originalName || 'image.jpg' });
-        else if (item.file) formData.append('files', fs.createReadStream(item.file.path), { filename: item.file.originalname });
+        if (item.buffer)
+          formData.append('files', item.buffer, {
+            filename: item.originalName || 'image.jpg',
+          });
+        else if (item.file)
+          formData.append('files', fs.createReadStream(item.file.path), {
+            filename: item.file.originalname,
+          });
       });
-      batch.forEach((item) => this.updateProgress(item.id, 'processing', 0, 'Processing...'));
+      batch.forEach((item) =>
+        this.updateProgress(item.id, 'processing', 0, 'Processing...'),
+      );
 
       await this.withRetry(async () => {
-        const response = await axios.post(`${AI_SERVICE_URL}/predict/images`, formData, {
-          headers: { ...formData.getHeaders() },
-          timeout: 3000000,
-        });
+        const response = await axios.post(
+          `${AI_SERVICE_URL}/predict/images`,
+          formData,
+          {
+            headers: { ...formData.getHeaders() },
+            timeout: 3000000,
+          },
+        );
         const results = response.data.results;
         batch.forEach((item, i) => {
           this.updateProgress(item.id, 'completed', 100, 'Done', results[i]);
@@ -202,8 +246,14 @@ export class AIClientService extends EventEmitter {
     }
   }
 
-  private async withRetry<T>(fn: () => Promise<T>, retries = 3, delay = 2000): Promise<T> {
-    try { return await fn(); } catch (err) {
+  private async withRetry<T>(
+    fn: () => Promise<T>,
+    retries = 3,
+    delay = 2000,
+  ): Promise<T> {
+    try {
+      return await fn();
+    } catch (err) {
       if (retries > 0) {
         logger.warn(`[AIClient] Retrying... (${retries} left)`);
         await new Promise((r) => setTimeout(r, delay));

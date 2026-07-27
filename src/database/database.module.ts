@@ -13,11 +13,15 @@ import { logger } from '../common/utils/logger.util';
       useFactory: (configService: ConfigService<EnvConfig, true>) => {
         const uri = configService.get<string>('MONGO_URI');
         if (!uri) {
-          logger.error('[DatabaseConfig] MONGO_URI is missing or undefined in environment variables!');
+          logger.error(
+            '[DatabaseConfig] MONGO_URI is missing or undefined in environment variables!',
+          );
         } else {
           // Mask password for safe console output
           const maskedUri = uri.replace(/\/\/([^:]+):([^@]+)@/, '//$1:****@');
-          logger.info(`[DatabaseConfig] Initializing MongoDB connection to: ${maskedUri}`);
+          logger.info(
+            `[DatabaseConfig] Initializing MongoDB connection to: ${maskedUri}`,
+          );
         }
 
         return {
@@ -30,11 +34,14 @@ import { logger } from '../common/utils/logger.util';
             });
 
             connection.on('error', (err: any) => {
-              logger.error(`[DatabaseConfig] MongoDB connection failure: ${err.message}`, {
-                name: err.name,
-                code: err.code,
-                stack: err.stack,
-              });
+              logger.error(
+                `[DatabaseConfig] MongoDB connection failure: ${err.message}`,
+                {
+                  name: err.name,
+                  code: err.code,
+                  stack: err.stack,
+                },
+              );
             });
 
             connection.on('disconnected', () => {
@@ -42,7 +49,9 @@ import { logger } from '../common/utils/logger.util';
             });
 
             connection.on('reconnected', () => {
-              logger.info('[DatabaseConfig] MongoDB connection re-established.');
+              logger.info(
+                '[DatabaseConfig] MongoDB connection re-established.',
+              );
             });
 
             return connection;
@@ -52,4 +61,4 @@ import { logger } from '../common/utils/logger.util';
     }),
   ],
 })
-export class DatabaseModule { }
+export class DatabaseModule {}

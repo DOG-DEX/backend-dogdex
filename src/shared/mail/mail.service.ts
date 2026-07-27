@@ -83,38 +83,50 @@ const translations = {
   vi: {
     common: {
       footer: 'Ứng dụng nhận diện giống chó thông minh bằng AI.',
-      autoEmail: 'Email này được gửi tự động, vui lòng không trả lời trực tiếp.',
+      autoEmail:
+        'Email này được gửi tự động, vui lòng không trả lời trực tiếp.',
       ctaViewDetails: 'Xem chi tiết',
       ctaViewAll: 'Xem tất cả',
     },
     passwordReset: {
       subject: '[DogDex] Đặt lại mật khẩu',
       greeting: (name: string) => `Xin chào ${name}`,
-      intro: 'Bạn đã yêu cầu đặt lại mật khẩu cho tài khoản <strong>DogDex</strong> của mình.',
-      instruction: 'Vui lòng sử dụng mã xác thực bên dưới để hoàn tất quá trình:',
-      expireNotice: (mins: number) => `Mã xác thực này sẽ hết hạn sau <strong>${mins} phút</strong>.`,
-      warning: 'Nếu bạn không yêu cầu đặt lại mật khẩu, vui lòng bỏ qua email này hoặc liên hệ bộ phận hỗ trợ.',
+      intro:
+        'Bạn đã yêu cầu đặt lại mật khẩu cho tài khoản <strong>DogDex</strong> của mình.',
+      instruction:
+        'Vui lòng sử dụng mã xác thực bên dưới để hoàn tất quá trình:',
+      expireNotice: (mins: number) =>
+        `Mã xác thực này sẽ hết hạn sau <strong>${mins} phút</strong>.`,
+      warning:
+        'Nếu bạn không yêu cầu đặt lại mật khẩu, vui lòng bỏ qua email này hoặc liên hệ bộ phận hỗ trợ.',
     },
     verification: {
       subject: '[DogDex] Xác thực tài khoản của bạn',
       greeting: (name: string) => `Chào mừng ${name} đến với DogDex`,
-      intro: 'Cảm ơn bạn đã đăng ký tài khoản. Để bắt đầu sử dụng dịch vụ, vui lòng xác thực địa chỉ email của bạn.',
+      intro:
+        'Cảm ơn bạn đã đăng ký tài khoản. Để bắt đầu sử dụng dịch vụ, vui lòng xác thực địa chỉ email của bạn.',
       instruction: 'Mã xác thực của bạn là:',
-      expireNotice: (mins: number) => `Mã xác thực này sẽ hết hạn sau <strong>${mins} phút</strong>.`,
+      expireNotice: (mins: number) =>
+        `Mã xác thực này sẽ hết hạn sau <strong>${mins} phút</strong>.`,
       warning: 'Nếu bạn không tạo tài khoản DogDex, vui lòng bỏ qua email này.',
     },
     qrScanAlert: {
-      subject: (dogName: string) => `[DogDex] Có người vừa quét mã QR của ${dogName}`,
+      subject: (dogName: string) =>
+        `[DogDex] Có người vừa quét mã QR của ${dogName}`,
       title: 'Có người vừa quét mã QR chó của bạn',
-      intro: (dogName: string) => `Ai đó vừa quét mã QR trên vòng cổ của bé <strong>${dogName}</strong>. Đây có thể là dấu hiệu cho thấy bé đang ở gần đó.`,
+      intro: (dogName: string) =>
+        `Ai đó vừa quét mã QR trên vòng cổ của bé <strong>${dogName}</strong>. Đây có thể là dấu hiệu cho thấy bé đang ở gần đó.`,
       labelLocation: 'Vị trí phát hiện:',
       labelTime: 'Thời gian:',
-      advice: 'Hãy kiểm tra ứng dụng DogDex ngay để xem chi tiết bài đăng hoặc liên hệ với người tìm thấy.',
+      advice:
+        'Hãy kiểm tra ứng dụng DogDex ngay để xem chi tiết bài đăng hoặc liên hệ với người tìm thấy.',
     },
     dogFound: {
-      subject: (dogName: string) => `[DogDex] ĐÃ TÌM THẤY BÉ ${dogName.toUpperCase()}`,
+      subject: (dogName: string) =>
+        `[DogDex] ĐÃ TÌM THẤY BÉ ${dogName.toUpperCase()}`,
       title: 'Có người vừa báo tìm thấy chó của bạn',
-      intro: (dogName: string) => `Một người tốt bụng vừa báo cáo đã nhìn thấy/tìm thấy bé <strong>${dogName}</strong>.`,
+      intro: (dogName: string) =>
+        `Một người tốt bụng vừa báo cáo đã nhìn thấy/tìm thấy bé <strong>${dogName}</strong>.`,
       finderDetails: 'Thông tin người tìm thấy:',
       labelName: 'Họ tên:',
       labelPhone: 'Số điện thoại:',
@@ -129,67 +141,88 @@ const translations = {
     thankFinder: {
       subject: '[DogDex] Cảm ơn bạn đã giúp đỡ tìm cún lạc',
       title: 'Cảm ơn tấm lòng tốt bụng của bạn',
-      intro: (dogName: string, breed: string) => `Cảm ơn bạn rất nhiều vì đã báo cáo thông tin giúp đỡ tìm thấy bé <strong>${dogName}</strong> (giống ${breed}).`,
-      rewardNotice: 'Bạn vừa được thưởng <strong>+10 Token</strong> vào tài khoản DogDex để tiếp tục sử dụng các tính năng AI.',
-      signupInvite: 'Tạo tài khoản DogDex ngay để nhận 10 Token thưởng và tham gia cộng đồng bảo vệ thú cưng.',
+      intro: (dogName: string, breed: string) =>
+        `Cảm ơn bạn rất nhiều vì đã báo cáo thông tin giúp đỡ tìm thấy bé <strong>${dogName}</strong> (giống ${breed}).`,
+      rewardNotice:
+        'Bạn vừa được thưởng <strong>+10 Token</strong> vào tài khoản DogDex để tiếp tục sử dụng các tính năng AI.',
+      signupInvite:
+        'Tạo tài khoản DogDex ngay để nhận 10 Token thưởng và tham gia cộng đồng bảo vệ thú cưng.',
     },
     matchNotification: {
       subject: (isLost: boolean, breed: string, count: number) =>
         isLost
           ? `[DogDex] Có ${count} kết quả phù hợp với cún ${breed} bị mất của bạn`
           : `[DogDex] Có cún ${breed} lạc phù hợp với bài đăng của bạn`,
-      title: (isLost: boolean) => isLost ? 'Tìm thấy bài đăng phù hợp với cún bị mất' : 'Tìm thấy cún bị mất phù hợp với bài đăng',
+      title: (isLost: boolean) =>
+        isLost
+          ? 'Tìm thấy bài đăng phù hợp với cún bị mất'
+          : 'Tìm thấy cún bị mất phù hợp với bài đăng',
       intro: (name: string, breed: string, count: number, isLost: boolean) =>
         isLost
           ? `Xin chào ${name}, hệ thống DogDex vừa phát hiện <strong>${count} bài đăng</strong> chó đi lạc gần đây có thể là bé <strong>${breed}</strong> của bạn.`
           : `Xin chào ${name}, hệ thống DogDex phát hiện bài đăng của bạn có thể trùng khớp với <strong>${count} bé ${breed}</strong> đang được báo tìm chủ.`,
     },
     healthReminder: {
-      subject: (dogName: string, title: string) => `[DogDex] Nhắc nhở lịch khám cho ${dogName}: ${title}`,
+      subject: (dogName: string, title: string) =>
+        `[DogDex] Nhắc nhở lịch khám cho ${dogName}: ${title}`,
       title: 'Nhắc nhở lịch trình sức khỏe',
-      intro: (ownerName: string, dogName: string) => `Xin chào ${ownerName}, bé <strong>${dogName}</strong> có một lịch trình sức khỏe cần chú ý:`,
+      intro: (ownerName: string, dogName: string) =>
+        `Xin chào ${ownerName}, bé <strong>${dogName}</strong> có một lịch trình sức khỏe cần chú ý:`,
     },
     feedbackApproved: {
       subject: '[DogDex] Phản hồi của bạn về AI đã được phê duyệt',
       title: 'Cảm ơn sự đóng góp của bạn',
-      intro: (userName: string, breed: string) => `Xin chào ${userName}, đóng góp phản hồi về nhận diện giống chó <strong>${breed}</strong> của bạn đã được quản trị viên chấp nhận.`,
+      intro: (userName: string, breed: string) =>
+        `Xin chào ${userName}, đóng góp phản hồi về nhận diện giống chó <strong>${breed}</strong> của bạn đã được quản trị viên chấp nhận.`,
     },
   },
   en: {
     common: {
       footer: 'AI-Powered Dog Breed Identification App.',
-      autoEmail: 'This email was generated automatically. Please do not reply directly.',
+      autoEmail:
+        'This email was generated automatically. Please do not reply directly.',
       ctaViewDetails: 'View Details',
       ctaViewAll: 'View All',
     },
     passwordReset: {
       subject: '[DogDex] Reset your password',
       greeting: (name: string) => `Hello ${name}`,
-      intro: 'You requested a password reset for your <strong>DogDex</strong> account.',
-      instruction: 'Please use the verification code below to complete the process:',
-      expireNotice: (mins: number) => `This code will expire in <strong>${mins} minutes</strong>.`,
-      warning: 'If you did not request a password reset, please ignore this email.',
+      intro:
+        'You requested a password reset for your <strong>DogDex</strong> account.',
+      instruction:
+        'Please use the verification code below to complete the process:',
+      expireNotice: (mins: number) =>
+        `This code will expire in <strong>${mins} minutes</strong>.`,
+      warning:
+        'If you did not request a password reset, please ignore this email.',
     },
     verification: {
       subject: '[DogDex] Verify your account',
       greeting: (name: string) => `Welcome ${name} to DogDex`,
-      intro: 'Thank you for registering. Please verify your email address to get started.',
+      intro:
+        'Thank you for registering. Please verify your email address to get started.',
       instruction: 'Your verification code is:',
-      expireNotice: (mins: number) => `This code will expire in <strong>${mins} minutes</strong>.`,
-      warning: 'If you did not create a DogDex account, please ignore this email.',
+      expireNotice: (mins: number) =>
+        `This code will expire in <strong>${mins} minutes</strong>.`,
+      warning:
+        'If you did not create a DogDex account, please ignore this email.',
     },
     qrScanAlert: {
-      subject: (dogName: string) => `[DogDex] Someone scanned ${dogName}'s QR code`,
-      title: 'Someone scanned your dog\'s QR code',
-      intro: (dogName: string) => `Someone just scanned the QR code on <strong>${dogName}</strong>'s collar.`,
+      subject: (dogName: string) =>
+        `[DogDex] Someone scanned ${dogName}'s QR code`,
+      title: "Someone scanned your dog's QR code",
+      intro: (dogName: string) =>
+        `Someone just scanned the QR code on <strong>${dogName}</strong>'s collar.`,
       labelLocation: 'Location:',
       labelTime: 'Time:',
       advice: 'Check your DogDex app for details or to contact the finder.',
     },
     dogFound: {
-      subject: (dogName: string) => `[DogDex] ${dogName.toUpperCase()} HAS BEEN FOUND`,
+      subject: (dogName: string) =>
+        `[DogDex] ${dogName.toUpperCase()} HAS BEEN FOUND`,
       title: 'Someone reported finding your dog',
-      intro: (dogName: string) => `A kind person just reported seeing/finding <strong>${dogName}</strong>.`,
+      intro: (dogName: string) =>
+        `A kind person just reported seeing/finding <strong>${dogName}</strong>.`,
       finderDetails: 'Finder details:',
       labelName: 'Name:',
       labelPhone: 'Phone:',
@@ -204,28 +237,39 @@ const translations = {
     thankFinder: {
       subject: '[DogDex] Thank you for helping find a lost dog',
       title: 'Thank you for your kindness',
-      intro: (dogName: string, breed: string) => `Thank you so much for reporting information to help find <strong>${dogName}</strong> (${breed}).`,
-      rewardNotice: 'You have been rewarded <strong>+10 Tokens</strong> in your DogDex account.',
-      signupInvite: 'Sign up for DogDex now to claim 10 bonus tokens and join the pet protection community.',
+      intro: (dogName: string, breed: string) =>
+        `Thank you so much for reporting information to help find <strong>${dogName}</strong> (${breed}).`,
+      rewardNotice:
+        'You have been rewarded <strong>+10 Tokens</strong> in your DogDex account.',
+      signupInvite:
+        'Sign up for DogDex now to claim 10 bonus tokens and join the pet protection community.',
     },
     matchNotification: {
       subject: (isLost: boolean, breed: string, count: number) =>
-        isLost ? `[DogDex] Found ${count} potential matches for your lost ${breed}` : `[DogDex] Lost ${breed} post matching yours`,
-      title: (isLost: boolean) => isLost ? 'Matches Found for your Lost Dog' : 'Found a Matching Lost Dog Post',
+        isLost
+          ? `[DogDex] Found ${count} potential matches for your lost ${breed}`
+          : `[DogDex] Lost ${breed} post matching yours`,
+      title: (isLost: boolean) =>
+        isLost
+          ? 'Matches Found for your Lost Dog'
+          : 'Found a Matching Lost Dog Post',
       intro: (name: string, breed: string, count: number, isLost: boolean) =>
         isLost
           ? `Hello ${name}, DogDex system found <strong>${count} recent posts</strong> that might match your lost <strong>${breed}</strong>.`
           : `Hello ${name}, your post matches <strong>${count} ${breed}</strong> dogs reported found.`,
     },
     healthReminder: {
-      subject: (dogName: string, title: string) => `[DogDex] Health Reminder for ${dogName}: ${title}`,
+      subject: (dogName: string, title: string) =>
+        `[DogDex] Health Reminder for ${dogName}: ${title}`,
       title: 'Health Schedule Reminder',
-      intro: (ownerName: string, dogName: string) => `Hello ${ownerName}, <strong>${dogName}</strong> has an upcoming health event:`,
+      intro: (ownerName: string, dogName: string) =>
+        `Hello ${ownerName}, <strong>${dogName}</strong> has an upcoming health event:`,
     },
     feedbackApproved: {
       subject: '[DogDex] Your AI Feedback has been approved',
       title: 'Thank you for your contribution',
-      intro: (userName: string, breed: string) => `Hello ${userName}, your feedback for <strong>${breed}</strong> breed identification has been approved.`,
+      intro: (userName: string, breed: string) =>
+        `Hello ${userName}, your feedback for <strong>${breed}</strong> breed identification has been approved.`,
     },
   },
 };
@@ -254,11 +298,17 @@ export class MailService {
       });
       this.logger.log(`SMTP Mailer initialized successfully (${host}:${port})`);
     } else {
-      this.logger.warn(`SMTP credentials not fully set. Email sending will be logged to console (Mock Mode).`);
+      this.logger.warn(
+        `SMTP credentials not fully set. Email sending will be logged to console (Mock Mode).`,
+      );
     }
   }
 
-  async sendEmail(to: string, subject: string, htmlContent: string): Promise<void> {
+  async sendEmail(
+    to: string,
+    subject: string,
+    htmlContent: string,
+  ): Promise<void> {
     const brevoApiKey = process.env.BREVO_API_KEY;
     const senderEmail = process.env.EMAIL_FROM || 'ctytest8@gmail.com';
     const senderName = 'DogDex Support';
@@ -269,7 +319,7 @@ export class MailService {
         const response = await fetch('https://api.brevo.com/v3/smtp/email', {
           method: 'POST',
           headers: {
-            'accept': 'application/json',
+            accept: 'application/json',
             'api-key': brevoApiKey,
             'content-type': 'application/json',
           },
@@ -283,12 +333,16 @@ export class MailService {
 
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}));
-          this.logger.error(`[Brevo API Error] (${response.status}): ${JSON.stringify(errorData)}`);
+          this.logger.error(
+            `[Brevo API Error] (${response.status}): ${JSON.stringify(errorData)}`,
+          );
           throw new Error(`Brevo API Error: ${response.statusText}`);
         }
 
         const data = await response.json();
-        this.logger.log(`[Email Sent via Brevo] To: ${to} | MessageId: ${data.messageId}`);
+        this.logger.log(
+          `[Email Sent via Brevo] To: ${to} | MessageId: ${data.messageId}`,
+        );
         return;
       } catch (err: any) {
         this.logger.error(`[Brevo API Exception] ${err.message}`);
@@ -305,12 +359,18 @@ export class MailService {
           subject,
           html: htmlContent,
         });
-        this.logger.log(`[Email Sent via SMTP] To: ${to} | Subject: ${subject}`);
+        this.logger.log(
+          `[Email Sent via SMTP] To: ${to} | Subject: ${subject}`,
+        );
       } catch (err: any) {
-        this.logger.error(`[Email Failed via SMTP] To: ${to} | Error: ${err.message}`);
+        this.logger.error(
+          `[Email Failed via SMTP] To: ${to} | Error: ${err.message}`,
+        );
       }
     } else {
-      this.logger.log(`[MOCK EMAIL] To: ${to}\nSubject: ${subject}\nHTML Preview:\n${htmlContent.substring(0, 300)}...`);
+      this.logger.log(
+        `[MOCK EMAIL] To: ${to}\nSubject: ${subject}\nHTML Preview:\n${htmlContent.substring(0, 300)}...`,
+      );
     }
   }
 
@@ -318,13 +378,15 @@ export class MailService {
     otp: string,
     userName: string,
     type: 'verification' | 'passwordReset',
-    lang: EmailLanguage = 'vi'
+    lang: EmailLanguage = 'vi',
   ): { subject: string; html: string } {
     const t = translations[lang][type];
     const isVerify = type === 'verification';
 
     const badgeColor = isVerify ? '#00A170' : '#FF6B00';
-    const badgeText = isVerify ? 'TRẠM XÁC THỰC TÀI KHOẢN' : 'TRẠM KHÔI PHỤC MẬT KHẨU';
+    const badgeText = isVerify
+      ? 'TRẠM XÁC THỰC TÀI KHOẢN'
+      : 'TRẠM KHÔI PHỤC MẬT KHẨU';
     const accentBg = isVerify ? '#E8F5E9' : '#FFF3E0';
 
     const emailSubject = isVerify
@@ -415,14 +477,24 @@ export class MailService {
   async sendVerificationOtp(options: OtpEmailOptions): Promise<void> {
     const lang = options.language || 'vi';
     const name = options.userName || 'Trainer';
-    const { subject, html } = this.buildRetroOtpEmailTemplate(options.otp, name, 'verification', lang);
+    const { subject, html } = this.buildRetroOtpEmailTemplate(
+      options.otp,
+      name,
+      'verification',
+      lang,
+    );
     await this.sendEmail(options.to, subject, html);
   }
 
   async sendPasswordResetOtp(options: OtpEmailOptions): Promise<void> {
     const lang = options.language || 'vi';
     const name = options.userName || 'Trainer';
-    const { subject, html } = this.buildRetroOtpEmailTemplate(options.otp, name, 'passwordReset', lang);
+    const { subject, html } = this.buildRetroOtpEmailTemplate(
+      options.otp,
+      name,
+      'passwordReset',
+      lang,
+    );
     await this.sendEmail(options.to, subject, html);
   }
 
@@ -444,7 +516,9 @@ export class MailService {
     await this.sendEmail(options.to, t.subject(options.dogName), html);
   }
 
-  async sendDogFoundNotification(options: FoundDogNotificationOptions): Promise<void> {
+  async sendDogFoundNotification(
+    options: FoundDogNotificationOptions,
+  ): Promise<void> {
     const lang = options.language || 'vi';
     const t = translations[lang].dogFound;
 
@@ -482,7 +556,9 @@ export class MailService {
     await this.sendEmail(options.to, t.subject, html);
   }
 
-  async sendFeedbackThankYouEmail(options: FeedbackApprovedOptions): Promise<void> {
+  async sendFeedbackThankYouEmail(
+    options: FeedbackApprovedOptions,
+  ): Promise<void> {
     const lang = options.language || 'vi';
     const t = translations[lang].feedbackApproved;
 
@@ -505,6 +581,10 @@ export class MailService {
       <p><strong>Nội dung:</strong></p>
       <pre style="background: #F3F4F6; padding: 15px; border-radius: 6px;">${payload.message}</pre>
     `;
-    await this.sendEmail(receiverEmail, `[Contact Form] Từ ${payload.fromEmail}`, html);
+    await this.sendEmail(
+      receiverEmail,
+      `[Contact Form] Từ ${payload.fromEmail}`,
+      html,
+    );
   }
 }

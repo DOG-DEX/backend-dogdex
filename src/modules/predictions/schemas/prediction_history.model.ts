@@ -1,6 +1,6 @@
-import mongoose, { Schema, Document, Types } from "mongoose";
-import { MediaDoc } from "../../media/schemas/medias.model";
-import { UserDoc } from "../../users/schemas/user.model";
+import mongoose, { Schema, Document, Types } from 'mongoose';
+import { MediaDoc } from '../../media/schemas/medias.model';
+import { UserDoc } from '../../users/schemas/user.model';
 
 export interface IYoloPrediction {
   track_id?: number;
@@ -35,13 +35,13 @@ const predictionHistorySchema = new Schema<PredictionHistoryDoc>(
   {
     user: {
       type: Schema.Types.ObjectId,
-      ref: "User",
+      ref: 'User',
       required: false,
       index: true,
     },
     media: {
       type: Schema.Types.ObjectId,
-      ref: "Media",
+      ref: 'Media',
       required: true,
       index: true,
     },
@@ -68,8 +68,8 @@ const predictionHistorySchema = new Schema<PredictionHistoryDoc>(
     isDeleted: { type: Boolean, default: false, index: true, select: false },
   },
   {
-    timestamps: { createdAt: "createdAt", updatedAt: "updatedAt" },
-    collection: "prediction_histories",
+    timestamps: { createdAt: 'createdAt', updatedAt: 'updatedAt' },
+    collection: 'prediction_histories',
     toJSON: {
       transform: (doc: any, ret: any) => {
         ret.id = ret._id.toString();
@@ -87,7 +87,7 @@ const predictionHistorySchema = new Schema<PredictionHistoryDoc>(
         delete ret.isDeleted;
       },
     },
-  }
+  },
 );
 predictionHistorySchema.virtual('feedback', {
   ref: 'Feedback',
@@ -100,6 +100,6 @@ predictionHistorySchema.virtual('feedback', {
 predictionHistorySchema.index({ createdAt: -1 });
 
 export const PredictionHistoryModel = mongoose.model<PredictionHistoryDoc>(
-  "PredictionHistory",
-  predictionHistorySchema
+  'PredictionHistory',
+  predictionHistorySchema,
 );

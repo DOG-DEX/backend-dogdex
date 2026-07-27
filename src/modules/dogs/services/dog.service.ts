@@ -1,4 +1,10 @@
-import { Injectable, NotFoundException, UnauthorizedException, BadRequestException, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  UnauthorizedException,
+  BadRequestException,
+  Logger,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import fs from 'fs';
@@ -21,15 +27,20 @@ export class DogService {
 
   constructor(
     @InjectModel('DogProfile') private dogProfileModel: Model<DogProfileDoc>,
-    @InjectModel('HealthRecord') private healthRecordModel: Model<HealthRecordDoc>,
+    @InjectModel('HealthRecord')
+    private healthRecordModel: Model<HealthRecordDoc>,
     @InjectModel('User') private userModel: Model<UserDoc>,
     @InjectModel('Plan') private planModel: Model<PlanDoc>,
-    @InjectModel('CommunityPost') private communityPostModel: Model<CommunityPostDoc>,
+    @InjectModel('CommunityPost')
+    private communityPostModel: Model<CommunityPostDoc>,
     private readonly mailService: MailService,
     private readonly cloudinaryService: CloudinaryService,
   ) {}
 
-  async createDog(data: Partial<DogProfileDoc>, ownerId: string): Promise<DogProfileDoc> {
+  async createDog(
+    data: Partial<DogProfileDoc>,
+    ownerId: string,
+  ): Promise<DogProfileDoc> {
     const user = await this.userModel.findById(ownerId);
     if (!user) throw new NotFoundException('User not found');
 
@@ -44,7 +55,7 @@ export class DogService {
     if (currentDogCount >= dogLimit) {
       throw new BadRequestException(
         `Gói ${userPlan?.name || 'Free'} chỉ cho phép tối đa ${dogLimit} chú chó. ` +
-        `Vui lòng nâng cấp gói để thêm chó mới.`,
+          `Vui lòng nâng cấp gói để thêm chó mới.`,
       );
     }
 
@@ -56,14 +67,20 @@ export class DogService {
   }
 
   async getDogsByOwner(ownerId: string): Promise<DogProfileDoc[]> {
-    return this.dogProfileModel.find({ owner_id: ownerId, isDeleted: { $ne: true } }).sort({ createdAt: -1 });
+    return this.dogProfileModel
+      .find({ owner_id: ownerId, isDeleted: { $ne: true } })
+      .sort({ createdAt: -1 });
   }
 
   async getDogById(dogId: string): Promise<DogProfileDoc | null> {
     return this.dogProfileModel.findById(dogId);
   }
 
-  async updateDog(dogId: string, ownerId: string, updateData: Partial<DogProfileDoc>): Promise<DogProfileDoc> {
+  async updateDog(
+    dogId: string,
+    ownerId: string,
+    updateData: Partial<DogProfileDoc>,
+  ): Promise<DogProfileDoc> {
     const dog = await this.dogProfileModel.findById(dogId);
     if (!dog) throw new NotFoundException('Dog not found');
     if (dog.owner_id.toString() !== ownerId) throw new UnauthorizedException();
@@ -85,7 +102,7 @@ export class DogService {
   async reportLost(
     id: string,
     ownerId: string,
-    location: { lat: number; lng: number; address: string },
+    location: { lat: number; lng: number; address?: string },
     contact: { name: string; phone?: string; email?: string },
     additionalInfo: { title?: string; content?: string } = {},
   ): Promise<DogProfileDoc> {
@@ -107,9 +124,12 @@ export class DogService {
 
   async getPublicDogInfo(id: string, req: Request): Promise<any> {
     const dog = await this.dogProfileModel.findById(id);
-    if (!dog || dog.isDeleted) throw new NotFoundException('Dog profile not found');
+    if (!dog || dog.isDeleted)
+      throw new NotFoundException('Dog profile not found');
 
-    const owner = await this.userModel.findById(dog.owner_id).select('username avatarPath email firstName');
+    const owner = await this.userModel
+      .findById(dog.owner_id)
+      .select('username avatarPath email firstName');
 
     let ownerAvatar: string | null = null;
     if (owner?.avatarPath) {
@@ -119,12 +139,17 @@ export class DogService {
     // ALERT: If dog is lost, send QR scan notification email to owner
     if (dog.isLost && owner?.email) {
       this.sendQrScanAlertEmail(req, dog, owner).catch((err) => {
-        this.logger.error(`[QR_ALERT] Failed to send scan alert for dog ${id}:`, err);
+        this.logger.error(
+          `[QR_ALERT] Failed to send scan alert for dog ${id}:`,
+          err,
+        );
       });
     }
 
     const dogObj = dog.toObject();
-    const avatarUrl = dogObj.avatarPath ? this.cloudinaryService.buildUrl(dogObj.avatarPath) : null;
+    const avatarUrl = dogObj.avatarPath
+      ? this.cloudinaryService.buildUrl(dogObj.avatarPath)
+      : null;
 
     return {
       ...dogObj,
@@ -137,7 +162,11 @@ export class DogService {
     };
   }
 
-  private async sendQrScanAlertEmail(req: Request, dog: any, owner: any): Promise<void> {
+  private async sendQrScanAlertEmail(
+    req: Request,
+    dog: any,
+    owner: any,
+  ): Promise<void> {
     const dogId = dog._id.toString();
     const cacheKey = `qr_alert:${dogId}`;
 
@@ -148,31 +177,53 @@ export class DogService {
           this.logger.log(`[QR_ALERT] Skipped (cooldown) for dog ${dogId}`);
           return;
         }
-        await redisClient.setEx(cacheKey, QR_ALERT_COOLDOWN_SECONDS, Date.now().toString());
+        await redisClient.setEx(
+          cacheKey,
+          QR_ALERT_COOLDOWN_SECONDS,
+          Date.now().toString(),
+        );
       } catch (e) {
         this.logger.warn(`[QR_ALERT] Redis error:`, e);
       }
     }
 
-    const scannerIp = (req.headers['x-forwarded-for'] as string) || (req.headers['x-real-ip'] as string) || req.socket?.remoteAddress || 'Unknown';
-    const ip = Array.isArray(scannerIp) ? scannerIp[0] : scannerIp.split(',')[0].trim();
+    const scannerIp =
+      (req.headers['x-forwarded-for'] as string) ||
+      (req.headers['x-real-ip'] as string) ||
+      req.socket?.remoteAddress ||
+      'Unknown';
+    const ip = Array.isArray(scannerIp)
+      ? scannerIp[0]
+      : scannerIp.split(',')[0].trim();
 
     let locationInfo = 'Không xác định được vị trí';
     try {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 5000);
-      const geoResponse = await fetch(`http://ip-api.com/json/${ip}?fields=status,country,regionName,city,lat,lon&lang=vi`, { signal: controller.signal });
+      const geoResponse = await fetch(
+        `http://ip-api.com/json/${ip}?fields=status,country,regionName,city,lat,lon&lang=vi`,
+        { signal: controller.signal },
+      );
       clearTimeout(timeoutId);
       const geoData = (await geoResponse.json()) as any;
       if (geoData.status === 'success') {
-        locationInfo = `${geoData.city || ''}, ${geoData.regionName || ''}, ${geoData.country || ''}`.replace(/^, |, $/g, '');
-        if (geoData.lat && geoData.lon) locationInfo += ` (${geoData.lat}, ${geoData.lon})`;
+        locationInfo =
+          `${geoData.city || ''}, ${geoData.regionName || ''}, ${geoData.country || ''}`.replace(
+            /^, |, $/g,
+            '',
+          );
+        if (geoData.lat && geoData.lon)
+          locationInfo += ` (${geoData.lat}, ${geoData.lon})`;
       }
     } catch (e) {
       this.logger.warn(`[QR_ALERT] Failed to get IP geolocation:`, e);
     }
 
-    const scanTime = new Date().toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh', dateStyle: 'full', timeStyle: 'medium' });
+    const scanTime = new Date().toLocaleString('vi-VN', {
+      timeZone: 'Asia/Ho_Chi_Minh',
+      dateStyle: 'full',
+      timeStyle: 'medium',
+    });
 
     await this.mailService.sendQrScanAlert({
       to: owner.email,
@@ -184,12 +235,19 @@ export class DogService {
     });
   }
 
-  async contactOwner(dogId: string, finderName: string, finderPhone: string, message?: string, location?: any): Promise<void> {
+  async contactOwner(
+    dogId: string,
+    finderName: string,
+    finderPhone: string,
+    message?: string,
+    location?: any,
+  ): Promise<void> {
     const dog = await this.dogProfileModel.findById(dogId);
     if (!dog) throw new NotFoundException('Dog not found');
 
     const owner = await this.userModel.findById(dog.owner_id);
-    if (!owner || !owner.email) throw new NotFoundException('Owner email not found');
+    if (!owner || !owner.email)
+      throw new NotFoundException('Owner email not found');
 
     await this.mailService.sendDogFoundNotification({
       to: owner.email,
@@ -211,25 +269,35 @@ export class DogService {
     location: { lat: number; lng: number; address?: string },
     file?: Express.Multer.File,
   ): Promise<any> {
-    if (!dogId || !contact) throw new BadRequestException('Missing required fields');
+    if (!dogId || !contact)
+      throw new BadRequestException('Missing required fields');
 
     const dog = await this.dogProfileModel.findById(dogId);
     if (!dog) throw new NotFoundException('Dog not found');
 
     if (verificationType === 'camera' && !file) {
-      throw new BadRequestException('Photo evidence is required for camera verification.');
+      throw new BadRequestException(
+        'Photo evidence is required for camera verification.',
+      );
     }
 
     let evidenceUrl = '';
     if (file) {
       const uploadResult = await this.cloudinaryService.uploadFile(
-        file.path, `verify_${dogId}_${Date.now()}`, 'verification', 'image', 'private',
+        file.path,
+        `verify_${dogId}_${Date.now()}`,
+        'verification',
+        'image',
+        'private',
       );
       evidenceUrl = uploadResult.secure_url;
-      if (file.path && fs.existsSync(file.path)) fs.promises.unlink(file.path).catch(() => {});
+      if (file.path && fs.existsSync(file.path))
+        fs.promises.unlink(file.path).catch(() => {});
     }
 
-    const dogAvatar = dog.avatarPath ? this.cloudinaryService.buildUrl(dog.avatarPath) : null;
+    const dogAvatar = dog.avatarPath
+      ? this.cloudinaryService.buildUrl(dog.avatarPath)
+      : null;
 
     const communityPost = new this.communityPostModel({
       author_id: (req as any).user ? (req as any).user._id : undefined,
@@ -247,7 +315,11 @@ export class DogService {
       contact_info: contact,
       ai_metadata: {
         breed: dog.breed,
-        breed_slug: dog.breed.toLowerCase().replace(/[\s_]+/g, '-').replace(/[^\w-]+/g, '').trim(),
+        breed_slug: dog.breed
+          .toLowerCase()
+          .replace(/[\s_]+/g, '-')
+          .replace(/[^\w-]+/g, '')
+          .trim(),
         confidence: verificationType === 'qr' ? 1.0 : 0.8,
         verificationType,
       },
@@ -280,29 +352,43 @@ export class DogService {
       });
 
       if (finderAccount) {
-        await this.userModel.updateOne({ _id: finderAccount._id }, { $inc: { remainingTokens: 10 } });
+        await this.userModel.updateOne(
+          { _id: finderAccount._id },
+          { $inc: { remainingTokens: 10 } },
+        );
       }
 
-      this.mailService.sendThankFinderEmail({
-        to: contact.email,
-        finderName: contact.name || 'người bạn tốt bụng',
-        dogName: dog.name,
-        dogBreed: dog.breed,
-        location: location.address,
-        verificationType,
-        hasAccount: !!finderAccount,
-        language: 'vi',
-      }).catch((e) => this.logger.error('Failed to send thank finder email:', e));
+      this.mailService
+        .sendThankFinderEmail({
+          to: contact.email,
+          finderName: contact.name || 'người bạn tốt bụng',
+          dogName: dog.name,
+          dogBreed: dog.breed,
+          location: location.address,
+          verificationType,
+          hasAccount: !!finderAccount,
+          language: 'vi',
+        })
+        .catch((e) =>
+          this.logger.error('Failed to send thank finder email:', e),
+        );
     }
 
-    return { message: 'Report processed successfully', postId: communityPost._id };
+    return {
+      message: 'Report processed successfully',
+      postId: communityPost._id,
+    };
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
   // HEALTH RECORDS
   // ─────────────────────────────────────────────────────────────────────────────
 
-  async addHealthRecord(dogId: string, ownerId: string, data: Partial<HealthRecordDoc>): Promise<HealthRecordDoc> {
+  async addHealthRecord(
+    dogId: string,
+    ownerId: string,
+    data: Partial<HealthRecordDoc>,
+  ): Promise<HealthRecordDoc> {
     const dog = await this.dogProfileModel.findById(dogId);
     if (!dog) throw new NotFoundException('Dog not found');
     if (dog.owner_id.toString() !== ownerId) throw new UnauthorizedException();
@@ -313,12 +399,14 @@ export class DogService {
     const userPlan = await this.planModel.findOne({ slug: user.plan });
     const recordLimit = (userPlan as any)?.healthRecordLimitPerDog || 3;
 
-    const currentRecordCount = await this.healthRecordModel.countDocuments({ dog_id: dogId });
+    const currentRecordCount = await this.healthRecordModel.countDocuments({
+      dog_id: dogId,
+    });
 
     if (currentRecordCount >= recordLimit) {
       throw new BadRequestException(
         `Gói ${userPlan?.name || 'Free'} chỉ cho phép tối đa ${recordLimit} bản ghi sức khỏe mỗi chó. ` +
-        `Vui lòng nâng cấp gói để thêm bản ghi mới.`,
+          `Vui lòng nâng cấp gói để thêm bản ghi mới.`,
       );
     }
 
@@ -329,17 +417,31 @@ export class DogService {
     return record;
   }
 
-  async getHealthRecords(dogId: string): Promise<HealthRecordDoc[]> {
+  async getHealthRecords(
+    dogId: string,
+    ownerId: string,
+  ): Promise<HealthRecordDoc[]> {
+    const dog = await this.dogProfileModel.findById(dogId);
+    if (!dog) throw new NotFoundException('Dog not found');
+    if (dog.owner_id.toString() !== ownerId) throw new UnauthorizedException();
+
     return this.healthRecordModel.find({ dog_id: dogId }).sort({ date: -1 });
   }
 
-  async updateHealthRecord(recordId: string, ownerId: string, data: Partial<HealthRecordDoc>): Promise<HealthRecordDoc> {
+  async updateHealthRecord(
+    recordId: string,
+    ownerId: string,
+    data: Partial<HealthRecordDoc>,
+  ): Promise<HealthRecordDoc> {
     const record = await this.healthRecordModel.findById(recordId);
     if (!record) throw new NotFoundException('Health record not found');
 
     const dog = await this.dogProfileModel.findById(record.dog_id);
     if (!dog) throw new NotFoundException('Associated dog profile not found');
-    if (dog.owner_id.toString() !== ownerId) throw new UnauthorizedException('You are not authorized to update this record');
+    if (dog.owner_id.toString() !== ownerId)
+      throw new UnauthorizedException(
+        'You are not authorized to update this record',
+      );
 
     Object.assign(record, data);
     await record.save();
@@ -356,15 +458,24 @@ export class DogService {
       return;
     }
 
-    if (dog.owner_id.toString() !== ownerId) throw new UnauthorizedException('You are not authorized to delete this record');
+    if (dog.owner_id.toString() !== ownerId)
+      throw new UnauthorizedException(
+        'You are not authorized to delete this record',
+      );
     await record.deleteOne();
   }
 
-  async searchLostDogs(filters: { breed?: string; color?: string; lat?: number; lng?: number }): Promise<DogProfileDoc[]> {
+  async searchLostDogs(filters: {
+    breed?: string;
+    color?: string;
+    lat?: number;
+    lng?: number;
+  }): Promise<DogProfileDoc[]> {
     const query: any = { isLost: true, isDeleted: { $ne: true } };
 
     if (filters.breed) query.breed = { $regex: filters.breed, $options: 'i' };
-    if (filters.color) query['attributes.color'] = { $regex: filters.color, $options: 'i' };
+    if (filters.color)
+      query['attributes.color'] = { $regex: filters.color, $options: 'i' };
 
     return this.dogProfileModel.find(query).sort({ updatedAt: -1 }).limit(50);
   }

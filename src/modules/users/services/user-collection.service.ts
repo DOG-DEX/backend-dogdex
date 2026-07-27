@@ -1,7 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
-import { UserCollectionDoc, CollectedBreed } from '../schemas/user_collection.model';
+import {
+  UserCollectionDoc,
+  CollectedBreed,
+} from '../schemas/user_collection.model';
 import { DogBreedWikiDoc } from '../../dogs/schemas/dogs_wiki.model';
 import { PredictionHistoryDoc } from '../../predictions/schemas/prediction_history.model';
 
@@ -23,7 +26,8 @@ export class UserCollectionService {
   private readonly logger = new Logger(UserCollectionService.name);
 
   constructor(
-    @InjectModel('UserCollection') private userCollectionModel: Model<UserCollectionDoc>,
+    @InjectModel('UserCollection')
+    private userCollectionModel: Model<UserCollectionDoc>,
     @InjectModel('DogBreedWikiEn') private wikiEnModel: Model<DogBreedWikiDoc>,
     @InjectModel('DogBreedWikiVi') private wikiViModel: Model<DogBreedWikiDoc>,
   ) {}
@@ -42,7 +46,10 @@ export class UserCollectionService {
     if (uniqueSlugs.length === 0) return;
 
     const wikiModel = this.getWikiModel(lang);
-    const breeds = await wikiModel.find({ slug: { $in: uniqueSlugs } }).select('_id').lean();
+    const breeds = await wikiModel
+      .find({ slug: { $in: uniqueSlugs } })
+      .select('_id')
+      .lean();
     if (breeds.length === 0) return;
 
     await this.userCollectionModel.updateOne(
@@ -90,20 +97,43 @@ export class UserCollectionService {
       { upsert: true },
     );
 
-    const allBreedSlugs = [...new Set(predictionResults.flatMap((p) => p.predictions.map((pred) => pred.class.toLowerCase().replace(/\s+/g, '-'))))];
+    const allBreedSlugs = [
+      ...new Set(
+        predictionResults.flatMap((p) =>
+          p.predictions.map((pred) =>
+            pred.class.toLowerCase().replace(/\s+/g, '-'),
+          ),
+        ),
+      ),
+    ];
     const wikiModel = this.getWikiModel(lang);
-    const breedsInDb = await wikiModel.find({ slug: { $in: allBreedSlugs } }).select('_id slug').lean();
+    const breedsInDb = await wikiModel
+      .find({ slug: { $in: allBreedSlugs } })
+      .select('_id slug')
+      .lean();
     const slugToIdMap = new Map(breedsInDb.map((b) => [b.slug, b._id]));
-    const operations: { breedId: Types.ObjectId; predictionId: Types.ObjectId }[] = [];
+    const operations: {
+      breedId: Types.ObjectId;
+      predictionId: Types.ObjectId;
+    }[] = [];
 
     predictionResults.forEach((prediction) => {
       const predictionId = prediction._id;
-      const breedSlugs = [...new Set(prediction.predictions.map((p) => p.class.toLowerCase().replace(/\s+/g, '-')))];
+      const breedSlugs = [
+        ...new Set(
+          prediction.predictions.map((p) =>
+            p.class.toLowerCase().replace(/\s+/g, '-'),
+          ),
+        ),
+      ];
 
       breedSlugs.forEach((slug) => {
         const breedId = slugToIdMap.get(slug);
         if (breedId) {
-          operations.push({ breedId: breedId as Types.ObjectId, predictionId: predictionId as Types.ObjectId });
+          operations.push({
+            breedId: breedId as Types.ObjectId,
+            predictionId: predictionId as Types.ObjectId,
+          });
         }
       });
     });
@@ -134,9 +164,13 @@ export class UserCollectionService {
     );
   }
 
-  async getUserCollection(userId: Types.ObjectId, lang: 'vi' | 'en' = 'en'): Promise<CollectedBreed[]> {
+  async getUserCollection(
+    userId: Types.ObjectId,
+    lang: 'vi' | 'en' = 'en',
+  ): Promise<CollectedBreed[]> {
     const wikiModel = this.getWikiModel(lang);
-    const userCollection = await this.userCollectionModel.findOne({ user_id: userId, isDeleted: { $ne: true } })
+    const userCollection = await this.userCollectionModel
+      .findOne({ user_id: userId, isDeleted: { $ne: true } })
       .populate({
         path: 'collectedBreeds.breed_id',
         model: wikiModel,
@@ -152,36 +186,61 @@ export class UserCollectionService {
   }
 
   async getCollectionStats(userId: Types.ObjectId) {
-    const userCollection = await this.userCollectionModel.findOne({ user_id: userId, isDeleted: { $ne: true } })
+    const userCollection = await this.userCollectionModel
+      .findOne({ user_id: userId, isDeleted: { $ne: true } })
       .populate('collectedBreeds.breed_id', 'breed slug')
       .lean();
     if (!userCollection) {
-      return { totalCollected: 0, totalPredictionsInCollection: 0, topBreeds: [] };
+      return {
+        totalCollected: 0,
+        totalPredictionsInCollection: 0,
+        topBreeds: [],
+      };
     }
 
     const totalCollected = userCollection.collectedBreeds.length;
-    const totalPredictionsInCollection = userCollection.collectedBreeds.reduce((sum, b) => sum + b.collection_count, 0);
+    const totalPredictionsInCollection = userCollection.collectedBreeds.reduce(
+      (sum, b) => sum + b.collection_count,
+      0,
+    );
     const topBreeds = [...userCollection.collectedBreeds]
       .sort((a, b) => b.collection_count - a.collection_count)
       .slice(0, 5)
-      .map((b) => ({ breed: (b.breed_id as any).breed, slug: (b.breed_id as any).slug, count: b.collection_count }));
+      .map((b) => ({
+        breed: (b.breed_id as any).breed,
+        slug: (b.breed_id as any).slug,
+        count: b.collection_count,
+      }));
 
     return { totalCollected, totalPredictionsInCollection, topBreeds };
   }
 
-  async getCollectionItemBySlug(userId: Types.ObjectId, breedSlug: string, lang: 'vi' | 'en' = 'en') {
+  async getCollectionItemBySlug(
+    userId: Types.ObjectId,
+    breedSlug: string,
+    lang: 'vi' | 'en' = 'en',
+  ) {
     const wikiModel = this.getWikiModel(lang);
-    const breed = await wikiModel.findOne({ slug: breedSlug }).select('_id').lean();
+    const breed = await wikiModel
+      .findOne({ slug: breedSlug })
+      .select('_id')
+      .lean();
     if (!breed) return null;
 
-    const userCollection = await this.userCollectionModel.findOne({
-      user_id: userId,
-      isDeleted: { $ne: true },
-      'collectedBreeds.breed_id': breed._id,
-    })
+    const userCollection = await this.userCollectionModel
+      .findOne({
+        user_id: userId,
+        isDeleted: { $ne: true },
+        'collectedBreeds.breed_id': breed._id,
+      })
       .populate('collectedBreeds.first_prediction_id', 'createdAt source')
       .lean();
 
-    return userCollection ? userCollection.collectedBreeds.find((cb) => (cb.breed_id as any)?._id?.toString() === breed._id.toString()) : null;
+    return userCollection
+      ? userCollection.collectedBreeds.find(
+          (cb) =>
+            (cb.breed_id as any)?._id?.toString() === breed._id.toString(),
+        )
+      : null;
   }
 }

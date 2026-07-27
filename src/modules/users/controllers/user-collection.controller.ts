@@ -1,4 +1,14 @@
-import { Controller, Get, Post, Param, Query, Body, UseGuards, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Param,
+  Query,
+  Body,
+  UseGuards,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { Types } from 'mongoose';
 
@@ -38,7 +48,11 @@ export class UserCollectionController {
     @Query('lang') lang: 'vi' | 'en' = 'en',
   ) {
     const userObjectId = new Types.ObjectId(userId);
-    const item = await this.userCollectionService.getCollectionItemBySlug(userObjectId, slug, lang);
+    const item = await this.userCollectionService.getCollectionItemBySlug(
+      userObjectId,
+      slug,
+      lang,
+    );
     if (!item) {
       throw new NotFoundException('Chưa sưu tầm giống chó này.');
     }
@@ -57,7 +71,12 @@ export class UserCollectionController {
     }
     const userObjectId = new Types.ObjectId(userId);
     const dummyPredictionId = new Types.ObjectId();
-    await this.userCollectionService.addOrUpdateManyCollections(userObjectId, [breedSlug], dummyPredictionId, lang);
+    await this.userCollectionService.addOrUpdateManyCollections(
+      userObjectId,
+      [breedSlug],
+      dummyPredictionId,
+      lang,
+    );
     return { message: 'Đã thêm vào bộ sưu tập thành công.' };
   }
 }

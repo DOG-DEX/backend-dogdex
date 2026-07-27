@@ -25,26 +25,40 @@ export class AchievementService {
 
   async getAllAchievementDefinitions(): Promise<IAchievement[]> {
     if (!this.cachedAchievements) {
-      this.cachedAchievements = await this.achievementModel.find({ isDeleted: { $ne: true } });
+      this.cachedAchievements = await this.achievementModel.find({
+        isDeleted: { $ne: true },
+      });
     }
     return this.cachedAchievements;
   }
 
-  async processUserAchievements(user: UserDoc, userCollections: any[], lang: 'vi' | 'en' = 'vi') {
+  async processUserAchievements(
+    user: UserDoc,
+    userCollections: any[],
+    lang: 'vi' | 'en' = 'vi',
+  ) {
     const wikiModel = this.getWikiModel(lang);
     const allAchievementDefinitions = await this.getAllAchievementDefinitions();
-    const unlockedKeys = new Set((user.achievements || []).map((ach) => ach.key));
+    const unlockedKeys = new Set(
+      (user.achievements || []).map((ach) => ach.key),
+    );
 
     if (!totalBreedsCache.has(lang)) {
-      const count = await wikiModel.countDocuments({ isDeleted: { $ne: true } });
+      const count = await wikiModel.countDocuments({
+        isDeleted: { $ne: true },
+      });
       totalBreedsCache.set(lang, count);
     }
     const totalBreedsInDB = totalBreedsCache.get(lang)!;
 
-    const collectedBreedDetails = await wikiModel.find({
-      _id: { $in: userCollections.map((uc) => uc.breed_id) },
-    }).select('slug');
-    const collectedBreedSlugs = new Set(collectedBreedDetails.map((b) => b.slug));
+    const collectedBreedDetails = await wikiModel
+      .find({
+        _id: { $in: userCollections.map((uc) => uc.breed_id) },
+      })
+      .select('slug');
+    const collectedBreedSlugs = new Set(
+      collectedBreedDetails.map((b) => b.slug),
+    );
 
     const collectionCount = userCollections.length;
 
@@ -61,11 +75,18 @@ export class AchievementService {
         return { ...flattenedAch, unlocked: true };
       }
 
-      const isNewlyUnlocked = this.isAchievementConditionMet(ach, collectionCount, collectedBreedSlugs, totalBreedsInDB);
+      const isNewlyUnlocked = this.isAchievementConditionMet(
+        ach,
+        collectionCount,
+        collectedBreedSlugs,
+        totalBreedsInDB,
+      );
       return { ...flattenedAch, unlocked: isNewlyUnlocked };
     });
 
-    const newlyUnlocked = achievementsWithStatus.filter((ach) => ach.unlocked && !unlockedKeys.has(ach.key));
+    const newlyUnlocked = achievementsWithStatus.filter(
+      (ach) => ach.unlocked && !unlockedKeys.has(ach.key),
+    );
 
     if (newlyUnlocked.length > 0) {
       const newAchievementsToEmbed = newlyUnlocked.map((ach) => ({
@@ -77,7 +98,9 @@ export class AchievementService {
         { _id: user._id },
         { $push: { achievements: { $each: newAchievementsToEmbed } } },
       );
-      this.logger.log(`User ${user.username} unlocked ${newlyUnlocked.length} new achievements.`);
+      this.logger.log(
+        `User ${user.username} unlocked ${newlyUnlocked.length} new achievements.`,
+      );
     }
 
     return achievementsWithStatus;

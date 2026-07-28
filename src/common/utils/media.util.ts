@@ -97,3 +97,17 @@ export const uploadFileToCloudinary = (
     sign_url: true,
   });
 };
+
+export const getCloudinaryUrl = (mediaPath?: string): string | undefined => {
+  if (!mediaPath) return undefined;
+  if (/^(https?:\/\/|data:|blob:)/i.test(mediaPath)) return mediaPath;
+
+  const cloudName =
+    process.env.CLOUDINARY_CLOUD_NAME ||
+    process.env.CLOUD_NAME_CLOUDINARY ||
+    'dtlp3p1sa';
+
+  const cleanPath = mediaPath.replace(/\\/g, '/').replace(/^\/+/, '');
+  return `https://res.cloudinary.com/${cloudName}/image/upload/${cleanPath}`;
+};
+

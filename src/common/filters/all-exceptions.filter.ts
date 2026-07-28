@@ -34,7 +34,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
         `[HTTP Exception] ${path} - Status: ${httpStatus} - Message: ${message}`,
         exception instanceof Error ? exception.stack : '',
       );
-    } else {
+    } else if (!(httpStatus === 404 && path.startsWith('/public/'))) {
       this.logger.warn(
         `[HTTP Exception] ${path} - Status: ${httpStatus} - Message: ${message}`,
       );

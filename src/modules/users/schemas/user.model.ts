@@ -1,6 +1,6 @@
 import mongoose, { Document, Schema, Types } from 'mongoose';
 
-export type UserRole = 'member' | 'de' | 'admin';
+export type UserRole = 'user' | 'member' | 'de' | 'admin';
 export type Plan = 'free' | 'starter' | 'professional' | 'enterprise';
 
 export interface UnlockedAchievement {
@@ -70,7 +70,7 @@ const userSchema = new Schema<UserDoc>(
     password: { type: String, required: true, select: false, trim: true },
     role: {
       type: String,
-      enum: ['member', 'de', 'admin'],
+      enum: ['user', 'member', 'de', 'admin'],
       default: 'member',
       required: true,
     },

@@ -41,6 +41,7 @@ export class UserService {
     if (!user) return null;
     const userPlan = await this.planModel.findOne({ slug: user.plan }).lean();
     const userObject = user.toObject ? user.toObject() : user;
+
     return {
       ...userObject,
       tokenAllotment: (userPlan as any)?.tokenAllotment || 0,
@@ -238,8 +239,16 @@ export class UserService {
     const user = await this.userModel.findById(userId);
     if (!user || user.isDeleted) throw new NotFoundException('User not found');
 
-    if (updateData.password) {
-      updateData.password = await bcrypt.hash(updateData.password, 10);
+    if (updateData.username && updateData.username.toLowerCase() !== user.username) {
+      const cleanUsername = updateData.username.toLowerCase().trim();
+      const existing = await this.userModel.findOne({
+        username: cleanUsername,
+        _id: { $ne: userId },
+      });
+      if (existing) {
+        throw new BadRequestException('Username is already taken');
+      }
+      updateData.username = cleanUsername;
     }
 
     const updated = await this.userModel

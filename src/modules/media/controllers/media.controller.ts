@@ -29,6 +29,10 @@ import { DirectoryService } from '../services/directory.service';
 import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../../../common/decorators/current-user.decorator';
 import { mediaUploadOptions } from '../../../common/config/upload.config';
+import { CloudinaryService } from '../../../shared/cloudinary/cloudinary.service';
+import { logger } from '../../../common/utils/logger.util';
+import * as path from 'path';
+import * as fs from 'fs/promises';
 
 @ApiTags('Media')
 @Controller('api/medias')
@@ -36,6 +40,7 @@ export class MediaController {
   constructor(
     private readonly mediaService: MediaService,
     private readonly directoryService: DirectoryService,
+    private readonly cloudinaryService: CloudinaryService,
   ) {}
 
   @ApiBearerAuth()
@@ -53,9 +58,33 @@ export class MediaController {
     if (!file) {
       throw new BadRequestException('Vui lòng cung cấp tệp tải lên.');
     }
+
+    let mediaPath = file.filename || file.path;
+
+    // Check if Cloudinary is configured
+    if (process.env.CLOUD_NAME_CLOUDINARY || process.env.CLOUDINARY_CLOUD_NAME) {
+      try {
+        const publicId = path.parse(file.filename || file.originalname).name;
+        const uploadRes = await this.cloudinaryService.uploadFile(
+          file.path,
+          publicId,
+          'uploads',
+          type === 'video' ? 'video' : 'image',
+          'public',
+        );
+        if (uploadRes && uploadRes.secure_url) {
+          mediaPath = uploadRes.secure_url;
+          // Delete temp file from local disk after successful upload
+          await fs.unlink(file.path).catch(() => {});
+        }
+      } catch (err: any) {
+        logger.warn('[MediaController] Cloudinary upload failed, falling back to local file:', err.message);
+      }
+    }
+
     const media = await this.mediaService.createMedia({
       name: file.originalname,
-      mediaPath: file.filename || file.path,
+      mediaPath,
       type,
       creator_id: userId,
       directory_id: directoryId || null,
@@ -80,16 +109,39 @@ export class MediaController {
     }
 
     const uploaded = await Promise.all(
-      files.map((file) =>
-        this.mediaService.createMedia({
+      files.map(async (file) => {
+        let mediaPath = file.filename || file.path;
+        const fileType = file.mimetype.startsWith('video/') ? 'video' : 'image';
+
+        if (process.env.CLOUD_NAME_CLOUDINARY || process.env.CLOUDINARY_CLOUD_NAME) {
+          try {
+            const publicId = path.parse(file.filename || file.originalname).name;
+            const uploadRes = await this.cloudinaryService.uploadFile(
+              file.path,
+              publicId,
+              'uploads',
+              fileType === 'video' ? 'video' : 'image',
+              'public',
+            );
+            if (uploadRes && uploadRes.secure_url) {
+              mediaPath = uploadRes.secure_url;
+              // Delete temp file from local disk after successful upload
+              await fs.unlink(file.path).catch(() => {});
+            }
+          } catch (err: any) {
+            logger.warn('[MediaController] Cloudinary upload failed for batch item, falling back to local file:', err.message);
+          }
+        }
+
+        return this.mediaService.createMedia({
           name: file.originalname,
-          mediaPath: file.filename || file.path,
-          type: file.mimetype.startsWith('video/') ? 'video' : 'image',
+          mediaPath,
+          type: fileType,
           creator_id: userId,
           directory_id: directoryId || null,
           file_size: file.size,
-        }),
-      ),
+        });
+      }),
     );
 
     return {

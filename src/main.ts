@@ -7,6 +7,9 @@ import { ValidationPipe } from '@nestjs/common';
 import { join } from 'path';
 import { existsSync, mkdirSync } from 'fs';
 import helmet from 'helmet';
+import cookieParser from 'cookie-parser';
+
+import { json, urlencoded } from 'express';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
@@ -15,7 +18,12 @@ async function bootstrap() {
 
   app.set('trust proxy', configService.get<boolean>('TRUST_PROXY', false));
 
+  // Express Body Limits
+  app.use(json({ limit: '10mb' }));
+  app.use(urlencoded({ limit: '10mb', extended: true }));
+
   // Security Middlewares
+  app.use(cookieParser());
   app.use(
     helmet({
       crossOriginResourcePolicy: { policy: 'cross-origin' },

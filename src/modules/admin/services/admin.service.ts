@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 
@@ -95,6 +95,14 @@ export class AdminService {
   }
 
   async updateUserRole(userId: string, role: string) {
+    const validRoles = ['user', 'member', 'de', 'admin'];
+
+    if (!validRoles.includes(role)) {
+      throw new BadRequestException(
+        `Vai trò không hợp lệ: '${role}'. Các vai trò hợp lệ gồm: ${validRoles.join(', ')}`,
+      );
+    }
+
     const user = await this.userModel
       .findByIdAndUpdate(userId, { role }, { new: true })
       .select('-password');

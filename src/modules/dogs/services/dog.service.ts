@@ -35,8 +35,9 @@ export class DogService {
     private communityPostModel: Model<CommunityPostDoc>,
     private readonly mailService: MailService,
     private readonly cloudinaryService: CloudinaryService,
-  ) {}
+  ) { }
 
+  // tạo dog profile
   async createDog(
     data: Partial<DogProfileDoc>,
     ownerId: string,
@@ -55,7 +56,7 @@ export class DogService {
     if (currentDogCount >= dogLimit) {
       throw new BadRequestException(
         `Gói ${userPlan?.name || 'Free'} chỉ cho phép tối đa ${dogLimit} chú chó. ` +
-          `Vui lòng nâng cấp gói để thêm chó mới.`,
+        `Vui lòng nâng cấp gói để thêm chó mới.`,
       );
     }
 
@@ -66,6 +67,7 @@ export class DogService {
     return dog;
   }
 
+  // lấy list profile dogs
   async getDogsByOwner(ownerId: string): Promise<DogProfileDoc[]> {
     return this.dogProfileModel
       .find({ owner_id: ownerId, isDeleted: { $ne: true } })
@@ -292,7 +294,7 @@ export class DogService {
       );
       evidenceUrl = uploadResult.secure_url;
       if (file.path && fs.existsSync(file.path))
-        fs.promises.unlink(file.path).catch(() => {});
+        fs.promises.unlink(file.path).catch(() => { });
     }
 
     const dogAvatar = dog.avatarPath
@@ -406,7 +408,7 @@ export class DogService {
     if (currentRecordCount >= recordLimit) {
       throw new BadRequestException(
         `Gói ${userPlan?.name || 'Free'} chỉ cho phép tối đa ${recordLimit} bản ghi sức khỏe mỗi chó. ` +
-          `Vui lòng nâng cấp gói để thêm bản ghi mới.`,
+        `Vui lòng nâng cấp gói để thêm bản ghi mới.`,
       );
     }
 

@@ -34,9 +34,10 @@ export class LoginDto {
 }
 
 export class RefreshTokenDto {
-  @ApiProperty()
+  @ApiProperty({ required: false })
+  @IsOptional()
   @IsString()
-  refreshToken: string;
+  refreshToken?: string;
 }
 
 export class VerifyEmailDto {
@@ -74,4 +75,16 @@ export class ResetPasswordDto {
   @IsString()
   @MinLength(6)
   password: string;
+}
+
+export class ChangePasswordDto {
+  @ApiProperty({ description: 'Mật khẩu hiện tại' })
+  @IsString()
+  @MinLength(6)
+  currentPassword: string;
+
+  @ApiProperty({ description: 'Mật khẩu mới (tối thiểu 6 ký tự)' })
+  @IsString()
+  @MinLength(6)
+  newPassword: string;
 }

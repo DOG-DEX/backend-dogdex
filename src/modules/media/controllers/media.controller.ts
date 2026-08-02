@@ -54,32 +54,37 @@ export class MediaController {
     @CurrentUser('userId') userId: string,
     @Body('directory_id') directoryId?: string,
     @Body('type') type = 'image',
+    @Body('folder') targetFolder?: string,
   ) {
     if (!file) {
       throw new BadRequestException('Vui lòng cung cấp tệp tải lên.');
     }
 
-    let mediaPath = file.filename || file.path;
+    const folder = targetFolder ? targetFolder.replace(/\\/g, '/').replace(/^\/+|\/+$/g, '') : 'uploads';
+    const publicId = path.parse(file.filename || file.originalname).name;
+    let mediaPath = `${folder}/${file.filename || file.originalname}`;
 
-    // Check if Cloudinary is configured
     if (process.env.CLOUD_NAME_CLOUDINARY || process.env.CLOUDINARY_CLOUD_NAME) {
       try {
-        const publicId = path.parse(file.filename || file.originalname).name;
         const uploadRes = await this.cloudinaryService.uploadFile(
           file.path,
           publicId,
-          'uploads',
+          folder,
           type === 'video' ? 'video' : 'image',
           'public',
         );
-        if (uploadRes && uploadRes.secure_url) {
-          mediaPath = uploadRes.secure_url;
-          // Delete temp file from local disk after successful upload
-          await fs.unlink(file.path).catch(() => {});
+        if (uploadRes && uploadRes.public_id) {
+          const ext = uploadRes.format ? `.${uploadRes.format}` : path.extname(file.originalname);
+          mediaPath = `${uploadRes.public_id}${ext.startsWith('.') ? ext : '.' + ext}`;
         }
       } catch (err: any) {
-        logger.warn('[MediaController] Cloudinary upload failed, falling back to local file:', err.message);
+        logger.warn('[MediaController] Cloudinary upload failed, falling back to relative path:', err.message);
       }
+    }
+
+    // Always delete temp local disk file after upload processing
+    if (file.path) {
+      await fs.unlink(file.path).catch(() => {});
     }
 
     const media = await this.mediaService.createMedia({
@@ -103,34 +108,41 @@ export class MediaController {
     @UploadedFiles() files: Express.Multer.File[],
     @CurrentUser('userId') userId: string,
     @Body('directory_id') directoryId?: string,
+    @Body('folder') targetFolder?: string,
   ) {
     if (!files || files.length === 0) {
       throw new BadRequestException('Vui lòng chọn ít nhất 1 tệp.');
     }
 
+    const folder = targetFolder ? targetFolder.replace(/\\/g, '/').replace(/^\/+|\/+$/g, '') : 'uploads';
+
     const uploaded = await Promise.all(
       files.map(async (file) => {
-        let mediaPath = file.filename || file.path;
         const fileType = file.mimetype.startsWith('video/') ? 'video' : 'image';
+        const publicId = path.parse(file.filename || file.originalname).name;
+        let mediaPath = `${folder}/${file.filename || file.originalname}`;
 
         if (process.env.CLOUD_NAME_CLOUDINARY || process.env.CLOUDINARY_CLOUD_NAME) {
           try {
-            const publicId = path.parse(file.filename || file.originalname).name;
             const uploadRes = await this.cloudinaryService.uploadFile(
               file.path,
               publicId,
-              'uploads',
+              folder,
               fileType === 'video' ? 'video' : 'image',
               'public',
             );
-            if (uploadRes && uploadRes.secure_url) {
-              mediaPath = uploadRes.secure_url;
-              // Delete temp file from local disk after successful upload
-              await fs.unlink(file.path).catch(() => {});
+            if (uploadRes && uploadRes.public_id) {
+              const ext = uploadRes.format ? `.${uploadRes.format}` : path.extname(file.originalname);
+              mediaPath = `${uploadRes.public_id}${ext.startsWith('.') ? ext : '.' + ext}`;
             }
           } catch (err: any) {
-            logger.warn('[MediaController] Cloudinary upload failed for batch item, falling back to local file:', err.message);
+            logger.warn('[MediaController] Cloudinary upload failed for batch item:', err.message);
           }
+        }
+
+        // Always delete temp local file
+        if (file.path) {
+          await fs.unlink(file.path).catch(() => {});
         }
 
         return this.mediaService.createMedia({

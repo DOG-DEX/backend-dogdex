@@ -7,6 +7,7 @@ import {
 } from '../schemas/user_collection.model';
 import { DogBreedWikiDoc } from '../../dogs/schemas/dogs_wiki.model';
 import { PredictionHistoryDoc } from '../../predictions/schemas/prediction_history.model';
+import { getCloudinaryUrl } from '../../../common/utils/media.util';
 
 export interface DogDexBreed {
   slug: string;
@@ -174,21 +175,48 @@ export class UserCollectionService {
       .populate({
         path: 'collectedBreeds.breed_id',
         model: wikiModel,
-        select: 'breed slug group',
+        select:
+          'breed slug group mediaPath pokedexNumber origin rarity_level description',
       })
       .populate({
         path: 'collectedBreeds.first_prediction_id',
         model: 'PredictionHistory',
-        select: 'createdAt source',
+        select: 'createdAt source mediaPath processedMediaPath',
       })
       .lean();
-    return userCollection ? userCollection.collectedBreeds : [];
+
+    if (!userCollection) return [];
+
+    return userCollection.collectedBreeds.map((cb: any) => {
+      if (cb.breed_id) {
+        if (cb.breed_id.mediaPath) {
+          const url = getCloudinaryUrl(cb.breed_id.mediaPath);
+          cb.breed_id.mediaUrl = url;
+          cb.breed_id.mediaPath = url;
+        }
+      }
+      if (cb.first_prediction_id) {
+        if (cb.first_prediction_id.mediaPath) {
+          const url = getCloudinaryUrl(cb.first_prediction_id.mediaPath);
+          cb.first_prediction_id.mediaUrl = url;
+          cb.first_prediction_id.mediaPath = url;
+        }
+        if (cb.first_prediction_id.processedMediaPath) {
+          const url = getCloudinaryUrl(
+            cb.first_prediction_id.processedMediaPath,
+          );
+          cb.first_prediction_id.processedMediaUrl = url;
+          cb.first_prediction_id.processedMediaPath = url;
+        }
+      }
+      return cb;
+    });
   }
 
   async getCollectionStats(userId: Types.ObjectId) {
     const userCollection = await this.userCollectionModel
       .findOne({ user_id: userId, isDeleted: { $ne: true } })
-      .populate('collectedBreeds.breed_id', 'breed slug')
+      .populate('collectedBreeds.breed_id', 'breed slug mediaPath')
       .lean();
     if (!userCollection) {
       return {
@@ -206,11 +234,17 @@ export class UserCollectionService {
     const topBreeds = [...userCollection.collectedBreeds]
       .sort((a, b) => b.collection_count - a.collection_count)
       .slice(0, 5)
-      .map((b) => ({
-        breed: (b.breed_id as any).breed,
-        slug: (b.breed_id as any).slug,
-        count: b.collection_count,
-      }));
+      .map((b) => {
+        const breedObj = b.breed_id as any;
+        const url = getCloudinaryUrl(breedObj?.mediaPath);
+        return {
+          breed: breedObj?.breed,
+          slug: breedObj?.slug,
+          mediaPath: url,
+          mediaUrl: url,
+          count: b.collection_count,
+        };
+      });
 
     return { totalCollected, totalPredictionsInCollection, topBreeds };
   }
@@ -233,14 +267,46 @@ export class UserCollectionService {
         isDeleted: { $ne: true },
         'collectedBreeds.breed_id': breed._id,
       })
-      .populate('collectedBreeds.first_prediction_id', 'createdAt source')
+      .populate({
+        path: 'collectedBreeds.breed_id',
+        model: wikiModel,
+        select:
+          'breed slug group mediaPath pokedexNumber origin rarity_level description',
+      })
+      .populate(
+        'collectedBreeds.first_prediction_id',
+        'createdAt source mediaPath processedMediaPath',
+      )
       .lean();
 
-    return userCollection
-      ? userCollection.collectedBreeds.find(
-          (cb) =>
-            (cb.breed_id as any)?._id?.toString() === breed._id.toString(),
-        )
-      : null;
+    if (!userCollection) return null;
+
+    const item: any = userCollection.collectedBreeds.find(
+      (cb) => (cb.breed_id as any)?._id?.toString() === breed._id.toString(),
+    );
+
+    if (item) {
+      if (item.breed_id && item.breed_id.mediaPath) {
+        const url = getCloudinaryUrl(item.breed_id.mediaPath);
+        item.breed_id.mediaUrl = url;
+        item.breed_id.mediaPath = url;
+      }
+      if (item.first_prediction_id) {
+        if (item.first_prediction_id.mediaPath) {
+          const url = getCloudinaryUrl(item.first_prediction_id.mediaPath);
+          item.first_prediction_id.mediaUrl = url;
+          item.first_prediction_id.mediaPath = url;
+        }
+        if (item.first_prediction_id.processedMediaPath) {
+          const url = getCloudinaryUrl(
+            item.first_prediction_id.processedMediaPath,
+          );
+          item.first_prediction_id.processedMediaUrl = url;
+          item.first_prediction_id.processedMediaPath = url;
+        }
+      }
+    }
+
+    return item || null;
   }
 }

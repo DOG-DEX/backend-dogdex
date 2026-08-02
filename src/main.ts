@@ -1,7 +1,14 @@
+import dns from 'node:dns';
+
+// Force Node.js DNS resolution to Google (8.8.8.8, 8.8.4.4) and Cloudflare (1.1.1.1, 1.0.0.1) DNS servers
+// to prevent SRV lookup failures (querySrv ECONNREFUSED) for MongoDB Atlas.
+dns.setServers(['8.8.8.8', '8.8.4.4', '1.1.1.1', '1.0.0.1']);
+
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { ConfigService } from '@nestjs/config';
+
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { ValidationPipe } from '@nestjs/common';
 import { join } from 'path';

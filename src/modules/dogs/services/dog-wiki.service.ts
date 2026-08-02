@@ -6,6 +6,7 @@ import {
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { DogBreedWikiDoc } from '../schemas/dogs_wiki.model';
+import { getCloudinaryUrl } from '../../../common/utils/media.util';
 
 export interface QueryOptions {
   page: number;
@@ -60,10 +61,16 @@ export class DogsWikiService {
     const breed = await Model.findOne({
       slug: { $regex: new RegExp(`^${slug}$`, 'i') },
       isDeleted: false,
-    });
+    }).lean();
     if (!breed)
       throw new NotFoundException(`Breed not found with slug: '${slug}'`);
-    return breed;
+
+    if (breed.mediaPath) {
+      const url = getCloudinaryUrl(breed.mediaPath);
+      (breed as any).mediaUrl = url;
+      (breed as any).mediaPath = url;
+    }
+    return breed as any;
   }
 
   async getBreedsBySlugs(
@@ -74,16 +81,25 @@ export class DogsWikiService {
     if (!slugs || slugs.length === 0) {
       return [];
     }
-    return Model.find({
+    const breeds = await Model.find({
       slug: { $in: slugs },
       isDeleted: false,
-    });
+    }).lean();
+
+    return breeds.map((b: any) => {
+      if (b.mediaPath) {
+        const url = getCloudinaryUrl(b.mediaPath);
+        b.mediaUrl = url;
+        b.mediaPath = url;
+      }
+      return b;
+    }) as any;
   }
 
   async getAllBreeds(options: QueryOptions) {
     const {
       page = 1,
-      limit = 20,
+      limit: rawLimit = 200,
       search,
       group,
       energy_level,
@@ -94,6 +110,7 @@ export class DogsWikiService {
       excludeIds,
       lang = 'en',
     } = options;
+    const limit = Math.min(rawLimit, 500); // max 500 per request
     const Model = this.getModel(lang);
     const skip = (page - 1) * limit;
 
@@ -145,8 +162,17 @@ export class DogsWikiService {
       Model.countDocuments(query),
     ]);
 
+    const formattedBreeds = breeds.map((b: any) => {
+      if (b.mediaPath) {
+        const url = getCloudinaryUrl(b.mediaPath);
+        b.mediaUrl = url;
+        b.mediaPath = url;
+      }
+      return b;
+    });
+
     return {
-      data: breeds,
+      data: formattedBreeds,
       pagination: { total, page, limit, totalPages: Math.ceil(total / limit) },
     };
   }

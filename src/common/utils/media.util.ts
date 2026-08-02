@@ -100,14 +100,31 @@ export const uploadFileToCloudinary = (
 
 export const getCloudinaryUrl = (mediaPath?: string): string | undefined => {
   if (!mediaPath) return undefined;
-  if (/^(https?:\/\/|data:|blob:)/i.test(mediaPath)) return mediaPath;
+
+  let clean = mediaPath.replace(/\\/g, '/').trim();
+
+  // Prevent duplicate Cloudinary URLs
+  if (clean.includes('res.cloudinary.com')) {
+    const matches = clean.match(/(https?:\/\/res\.cloudinary\.com\/[^\/]+\/(?:image|video)\/upload\/)(.+)/i);
+    if (matches) {
+      const base = matches[1];
+      let subPath = matches[2];
+      subPath = subPath.replace(/^https?:\/\/res\.cloudinary\.com\/[^\/]+\/(?:image|video)\/upload\//i, '');
+      return `${base}${subPath.replace(/^\/+/, '')}`;
+    }
+    return clean;
+  }
+
+  if (/^(https?:\/\/|data:|blob:)/i.test(clean)) {
+    return clean;
+  }
 
   const cloudName =
     process.env.CLOUDINARY_CLOUD_NAME ||
     process.env.CLOUD_NAME_CLOUDINARY ||
     'dtlp3p1sa';
 
-  const cleanPath = mediaPath.replace(/\\/g, '/').replace(/^\/+/, '');
-  return `https://res.cloudinary.com/${cloudName}/image/upload/${cleanPath}`;
+  clean = clean.replace(/^\/+/, '');
+  return `https://res.cloudinary.com/${cloudName}/image/upload/${clean}`;
 };
 

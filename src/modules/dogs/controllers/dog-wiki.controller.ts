@@ -29,7 +29,7 @@ export class DogWikiController {
   @ApiOperation({ summary: 'Get all dog breeds' })
   async getAllBreeds(
     @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
-    @Query('limit', new DefaultValuePipe(20), ParseIntPipe) limit: number,
+    @Query('limit', new DefaultValuePipe(200), ParseIntPipe) limit: number,
     @Query('search') search?: string,
     @Query('group') group?: string,
     @Query('energy_level') energy_level?: string,

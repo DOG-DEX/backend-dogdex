@@ -98,12 +98,37 @@ export class PredictionService {
       processingTime: 0,
     });
 
+    // Upload original file to Cloudinary eagerly so we can immediately
+    // delete the local disk file — prevents orphaned files in public\uploads
+    const filenameWithoutExt = `${file.originalname.replace(/\.[^/.]+$/, '')}_${Date.now()}`;
+    let cloudinaryPath = file.filename || file.originalname;
+    try {
+      const uploadRes = await this.cloudinary.uploadFile(
+        file.path,
+        filenameWithoutExt,
+        `public/uploads/${type}s`,
+        type,
+        'private',
+      );
+      cloudinaryPath = `${uploadRes.public_id}.${uploadRes.format}`;
+      await this.mediaModel.findByIdAndUpdate(newMedia._id, {
+        mediaPath: cloudinaryPath,
+      });
+    } catch (uploadErr) {
+      logger.warn('[makePrediction] Cloudinary pre-upload failed, queue will retry:', uploadErr);
+    } finally {
+      // Always delete the local disk file after attempting Cloudinary upload
+      const { existsSync, promises: fsPromises } = await import('fs');
+      if (file.path && existsSync(file.path))
+        await fsPromises.unlink(file.path).catch(() => {});
+    }
+
     await this.queueService.enqueuePrediction({
       predictionId: predictionId.toString(),
       mediaId: newMedia._id.toString(),
       userId,
       directoryId: directoryId?.toString(),
-      filePath: file.path,
+      filePath: cloudinaryPath,   // cloudinary path now, not local disk path
       fileOriginalName: file.originalname,
       fileType: type,
       modelName,
@@ -124,20 +149,28 @@ export class PredictionService {
     file: Express.Multer.File,
     userId?: string,
   ): Promise<any> {
-    const buffer = await this.mediaProcessor.optimizeImage(file.path);
-    const result = await this.aiClient.predict({
-      id: new Types.ObjectId().toString(),
-      userId: userId ? new Types.ObjectId(userId) : undefined,
-      buffer,
-      mediaType: 'image',
-      resolve: () => {},
-      reject: () => {},
-    });
-    if (!result?.predictions) throw new Error('Invalid result from AI');
-    return {
-      predictions: result.predictions,
-      processed_media_base64: result.processed_media_base64,
-    };
+    try {
+      const buffer = await this.mediaProcessor.optimizeImage(file.path);
+      const result = await this.aiClient.predict({
+        id: new Types.ObjectId().toString(),
+        userId: userId ? new Types.ObjectId(userId) : undefined,
+        buffer,
+        mediaType: 'image',
+        resolve: () => {},
+        reject: () => {},
+      });
+      if (!result?.predictions) throw new Error('Invalid result from AI');
+      return {
+        predictions: result.predictions,
+        processed_media_base64: result.processed_media_base64,
+      };
+    } finally {
+      // Always delete temp local disk file after processing
+      if (file?.path) {
+        const { existsSync, promises: fsPromises } = await import('fs');
+        if (existsSync(file.path)) await fsPromises.unlink(file.path).catch(() => {});
+      }
+    }
   }
 
   // ─── Batch predictions ────────────────────────────────────────────────────────

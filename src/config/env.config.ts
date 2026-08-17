@@ -26,17 +26,16 @@ export const envSchema = z
     JWT_ACCESS_EXPIRATION: durationSchema.optional(),
     JWT_REFRESH_EXPIRATION: durationSchema.optional(),
 
+    USE_REDIS: z.coerce.boolean().default(false),
+
     REDIS_HOST: z.string().default('localhost'),
     REDIS_PORT: z.coerce.number().default(6379),
     REDIS_PASSWORD: z.string().optional(),
+    REDIS_URL: z.string().optional(),
 
     CLOUDINARY_CLOUD_NAME: z.string().optional(),
     CLOUDINARY_API_KEY: z.string().optional(),
     CLOUDINARY_API_SECRET: z.string().optional(),
-    // Legacy local names retained until every deployment is migrated.
-    CLOUD_NAME_CLOUDINARY: z.string().optional(),
-    API_KEY_CLOUDINARY: z.string().optional(),
-    API_SECRET_CLOUDINARY: z.string().optional(),
 
     GEMINI_API_KEY: z.string().optional(),
     GOOGLE_API_KEY: z.string().optional(),
@@ -71,11 +70,6 @@ export const envSchema = z
 
     return {
       ...config,
-      CLOUDINARY_CLOUD_NAME:
-        config.CLOUDINARY_CLOUD_NAME ?? config.CLOUD_NAME_CLOUDINARY,
-      CLOUDINARY_API_KEY: config.CLOUDINARY_API_KEY ?? config.API_KEY_CLOUDINARY,
-      CLOUDINARY_API_SECRET:
-        config.CLOUDINARY_API_SECRET ?? config.API_SECRET_CLOUDINARY,
       GEMINI_API_KEY: config.GEMINI_API_KEY ?? config.GOOGLE_API_KEY,
       JWT_ACCESS_EXPIRES_IN: accessExpiration,
       JWT_REFRESH_EXPIRES_IN: refreshExpiration,

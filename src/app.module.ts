@@ -41,9 +41,10 @@ import { ModerationModule } from './modules/moderation/moderation.module';
     // Config
     ConfigModule.forRoot({
       isGlobal: true,
-      // `start:prod` loads .env.prod before Nest starts. Local development uses .env.local.
       envFilePath:
-        process.env.NODE_ENV === 'production' ? '.env.prod' : '.env.local',
+        process.env.NODE_ENV === 'production'
+          ? ['.env.prod', '.env']
+          : ['.env.local', '.env'],
       validate: validateEnv,
     }),
     ThrottlerModule.forRoot([

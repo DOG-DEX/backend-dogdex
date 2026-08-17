@@ -52,3 +52,13 @@ pids
 
 # Diagnostic reports (https://nodejs.org/api/report.html)
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
+
+# AI Agent & Workspace Customizations
+.agents
+.agents/
+.gemini
+.gemini/
+.claude
+.claude/
+.cursor
+.cursor/

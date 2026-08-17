@@ -21,7 +21,6 @@ export class MediaProcessorService {
 
   private initFfmpeg(): void {
     try {
-      // eslint-disable-next-line @typescript-eslint/no-var-requires
       const ffmpegLib = require('fluent-ffmpeg');
       const ffmpegPath = this.probeFfmpeg();
       if (ffmpegPath) {
@@ -34,12 +33,10 @@ export class MediaProcessorService {
         );
       }
       try {
-        // eslint-disable-next-line @typescript-eslint/no-var-requires
         const probe = require('@ffprobe-installer/ffprobe');
         if (probe?.path) ffmpegLib.setFfprobePath(probe.path);
       } catch {
         try {
-          // eslint-disable-next-line @typescript-eslint/no-var-requires
           const probeStatic = require('ffprobe-static');
           if (probeStatic?.path) ffmpegLib.setFfprobePath(probeStatic.path);
         } catch {
@@ -68,14 +65,12 @@ export class MediaProcessorService {
       /* continue */
     }
     try {
-      // eslint-disable-next-line @typescript-eslint/no-var-requires
       const inst = require('@ffmpeg-installer/ffmpeg');
       if (inst?.path) return inst.path;
     } catch {
       /* continue */
     }
     try {
-      // eslint-disable-next-line @typescript-eslint/no-var-requires
       const staticF = require('ffmpeg-static');
       if (staticF) return staticF;
     } catch {
@@ -117,7 +112,6 @@ export class MediaProcessorService {
       return fs.promises.readFile(filePath);
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
     const ffmpeg = require('fluent-ffmpeg');
 
     const runFfmpeg = (command: any): Promise<Buffer> =>

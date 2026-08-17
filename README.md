@@ -1,21 +1,29 @@
 # DogDex Backend
 
-NestJS API for DogDex.
+NestJS API service for dog breed classification, async prediction queues, pet care management, and community platform.
 
-## Start here
+## Quick Links
 
-- [Backend architecture and coding contract](docs/architecture/architecture-design.md)
-- [Environment template](.env.example)
-- [Agent rules](AGENTS.md)
+- [🚀 Bắt đầu từ đây (Getting Started)](docs/START_HERE.md)
+- [📘 Architecture & Coding Contract](docs/ARCHITECTURE.md)
+- [📊 Master Backend Progress Dashboard](docs/PROGRESS.md)
+- [🤖 Agent Rules & Instructions](AGENTS_GUIDE.md)
+- [📝 Doc Version Changelog](docs/CHANGELOG.md)
 
-## Commands
+## Development Setup
 
 ```bash
+# 1. Install dependencies
 npm install
-copy .env.example .env.local
+
+# 2. Setup local environment
+cp .env.example .env.local
+
+# 3. Start development server (Port 3000)
 npm run start:dev
+
+# 4. Build & Test
 npm run build
-npm test -- --runInBand
+npm test
 ```
 
-Production reads `.env.prod` through `npm run start:prod`. Keep real deployment secrets outside source control.

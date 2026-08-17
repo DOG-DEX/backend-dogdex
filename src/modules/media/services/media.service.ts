@@ -87,7 +87,7 @@ export class MediaService {
       if (!dirId) return 'public/uploads';
       let current = await this.directoryModel.findById(dirId);
       if (!current) return 'public/uploads';
-      let parts = [current.name];
+      const parts = [current.name];
       while (current && current.parent_id) {
         current = await this.directoryModel.findById(current.parent_id);
         if (current) parts.unshift(current.name);

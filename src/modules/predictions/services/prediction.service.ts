@@ -115,7 +115,10 @@ export class PredictionService {
         mediaPath: cloudinaryPath,
       });
     } catch (uploadErr) {
-      logger.warn('[makePrediction] Cloudinary pre-upload failed, queue will retry:', uploadErr);
+      logger.warn(
+        '[makePrediction] Cloudinary pre-upload failed, queue will retry:',
+        uploadErr,
+      );
     } finally {
       // Always delete the local disk file after attempting Cloudinary upload
       const { existsSync, promises: fsPromises } = await import('fs');
@@ -128,7 +131,7 @@ export class PredictionService {
       mediaId: newMedia._id.toString(),
       userId,
       directoryId: directoryId?.toString(),
-      filePath: cloudinaryPath,   // cloudinary path now, not local disk path
+      filePath: cloudinaryPath, // cloudinary path now, not local disk path
       fileOriginalName: file.originalname,
       fileType: type,
       modelName,
@@ -168,7 +171,8 @@ export class PredictionService {
       // Always delete temp local disk file after processing
       if (file?.path) {
         const { existsSync, promises: fsPromises } = await import('fs');
-        if (existsSync(file.path)) await fsPromises.unlink(file.path).catch(() => {});
+        if (existsSync(file.path))
+          await fsPromises.unlink(file.path).catch(() => {});
       }
     }
   }
@@ -402,10 +406,8 @@ export class PredictionService {
 
   private async callAiWithUrl(url: string): Promise<any> {
     const axios = (await import('axios')).default;
-    const response = await axios.post(
-      `${process.env.AI_SERVICE_URL || 'http://localhost:8000'}/predict/url`,
-      { url },
-    );
+    const aiUrl = process.env.AI_SERVICE_URL || '';
+    const response = await axios.post(`${aiUrl}/predict/url`, { url });
     return response.data;
   }
 

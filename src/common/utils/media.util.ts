@@ -105,11 +105,16 @@ export const getCloudinaryUrl = (mediaPath?: string): string | undefined => {
 
   // Prevent duplicate Cloudinary URLs
   if (clean.includes('res.cloudinary.com')) {
-    const matches = clean.match(/(https?:\/\/res\.cloudinary\.com\/[^\/]+\/(?:image|video)\/upload\/)(.+)/i);
+    const matches = clean.match(
+      /(https?:\/\/res\.cloudinary\.com\/[^/]+\/(?:image|video)\/upload\/)(.+)/i,
+    );
     if (matches) {
       const base = matches[1];
       let subPath = matches[2];
-      subPath = subPath.replace(/^https?:\/\/res\.cloudinary\.com\/[^\/]+\/(?:image|video)\/upload\//i, '');
+      subPath = subPath.replace(
+        /^https?:\/\/res\.cloudinary\.com\/[^/]+\/(?:image|video)\/upload\//i,
+        '',
+      );
       return `${base}${subPath.replace(/^\/+/, '')}`;
     }
     return clean;
@@ -119,12 +124,11 @@ export const getCloudinaryUrl = (mediaPath?: string): string | undefined => {
     return clean;
   }
 
-  const cloudName =
-    process.env.CLOUDINARY_CLOUD_NAME ||
-    process.env.CLOUD_NAME_CLOUDINARY ||
-    'dtlp3p1sa';
+  const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
+  if (!cloudName) {
+    return clean;
+  }
 
   clean = clean.replace(/^\/+/, '');
   return `https://res.cloudinary.com/${cloudName}/image/upload/${clean}`;
 };
-

@@ -60,11 +60,13 @@ export class MediaController {
       throw new BadRequestException('Vui lòng cung cấp tệp tải lên.');
     }
 
-    const folder = targetFolder ? targetFolder.replace(/\\/g, '/').replace(/^\/+|\/+$/g, '') : 'uploads';
+    const folder = targetFolder
+      ? targetFolder.replace(/\\/g, '/').replace(/^\/+|\/+$/g, '')
+      : 'uploads';
     const publicId = path.parse(file.filename || file.originalname).name;
     let mediaPath = `${folder}/${file.filename || file.originalname}`;
 
-    if (process.env.CLOUD_NAME_CLOUDINARY || process.env.CLOUDINARY_CLOUD_NAME) {
+    if (process.env.CLOUDINARY_CLOUD_NAME) {
       try {
         const uploadRes = await this.cloudinaryService.uploadFile(
           file.path,
@@ -74,11 +76,16 @@ export class MediaController {
           'public',
         );
         if (uploadRes && uploadRes.public_id) {
-          const ext = uploadRes.format ? `.${uploadRes.format}` : path.extname(file.originalname);
+          const ext = uploadRes.format
+            ? `.${uploadRes.format}`
+            : path.extname(file.originalname);
           mediaPath = `${uploadRes.public_id}${ext.startsWith('.') ? ext : '.' + ext}`;
         }
       } catch (err: any) {
-        logger.warn('[MediaController] Cloudinary upload failed, falling back to relative path:', err.message);
+        logger.warn(
+          '[MediaController] Cloudinary upload failed, falling back to relative path:',
+          err.message,
+        );
       }
     }
 
@@ -114,7 +121,9 @@ export class MediaController {
       throw new BadRequestException('Vui lòng chọn ít nhất 1 tệp.');
     }
 
-    const folder = targetFolder ? targetFolder.replace(/\\/g, '/').replace(/^\/+|\/+$/g, '') : 'uploads';
+    const folder = targetFolder
+      ? targetFolder.replace(/\\/g, '/').replace(/^\/+|\/+$/g, '')
+      : 'uploads';
 
     const uploaded = await Promise.all(
       files.map(async (file) => {
@@ -122,7 +131,7 @@ export class MediaController {
         const publicId = path.parse(file.filename || file.originalname).name;
         let mediaPath = `${folder}/${file.filename || file.originalname}`;
 
-        if (process.env.CLOUD_NAME_CLOUDINARY || process.env.CLOUDINARY_CLOUD_NAME) {
+        if (process.env.CLOUDINARY_CLOUD_NAME) {
           try {
             const uploadRes = await this.cloudinaryService.uploadFile(
               file.path,
@@ -132,11 +141,16 @@ export class MediaController {
               'public',
             );
             if (uploadRes && uploadRes.public_id) {
-              const ext = uploadRes.format ? `.${uploadRes.format}` : path.extname(file.originalname);
+              const ext = uploadRes.format
+                ? `.${uploadRes.format}`
+                : path.extname(file.originalname);
               mediaPath = `${uploadRes.public_id}${ext.startsWith('.') ? ext : '.' + ext}`;
             }
           } catch (err: any) {
-            logger.warn('[MediaController] Cloudinary upload failed for batch item:', err.message);
+            logger.warn(
+              '[MediaController] Cloudinary upload failed for batch item:',
+              err.message,
+            );
           }
         }
 

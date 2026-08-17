@@ -43,60 +43,75 @@ export class AIClientService extends EventEmitter {
   private queueEvents: QueueEvents;
 
   private getRedisConfig() {
+    const isRedisDisabled = process.env.USE_REDIS === 'false';
     const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
     const isTls = redisUrl.startsWith('rediss://');
     return {
       maxRetriesPerRequest: null,
       family: 4,
       keepAlive: 10000,
+      lazyConnect: isRedisDisabled,
+      enableOfflineQueue: !isRedisDisabled,
+      retryStrategy: isRedisDisabled
+        ? () => null
+        : (times: number) => Math.min(times * 500, 5000),
       ...(isTls && { tls: { rejectUnauthorized: false } }),
     };
   }
 
   constructor() {
     super();
-    const connection = new IORedis(
-      process.env.REDIS_URL || 'redis://localhost:6379',
-      this.getRedisConfig(),
-    );
-    const options = { connection };
+    const isRedisDisabled = process.env.USE_REDIS === 'false';
+    if (!isRedisDisabled) {
+      const connection = new IORedis(
+        process.env.REDIS_URL || 'redis://localhost:6379',
+        this.getRedisConfig(),
+      );
+      const options = { connection };
 
-    this.videoQueue = new Queue('video-batch-queue', options);
-    this.queueEvents = new QueueEvents('video-batch-queue', options);
-    this.videoWorker = new Worker(
-      'video-batch-queue',
-      (job) => this.processVideoJob(job),
-      {
-        ...options,
-        concurrency: 2,
-      },
-    );
+      this.videoQueue = new Queue('video-batch-queue', options);
+      this.queueEvents = new QueueEvents('video-batch-queue', options);
+      this.videoWorker = new Worker(
+        'video-batch-queue',
+        (job) => this.processVideoJob(job),
+        {
+          ...options,
+          concurrency: 2,
+        },
+      );
 
-    this.videoWorker.on('progress', (job, progress) => {
-      if (job) {
-        this.updateProgress(
-          job.id as string,
-          'processing',
-          progress as number,
-          'Processing...',
-        );
-        predictionNotifier.notify(job.id as string, 'progress', { progress });
-      }
-    });
-    this.videoWorker.on('completed', (job, result) => {
-      if (job) {
-        this.updateProgress(job.id as string, 'completed', 100, 'Done', result);
-        predictionNotifier.notify(job.id as string, 'completed', { result });
-      }
-    });
-    this.videoWorker.on('failed', (job, err) => {
-      if (job) {
-        this.updateProgress(job.id as string, 'failed', 0, err.message);
-        predictionNotifier.notify(job.id as string, 'failed', {
-          message: err.message,
-        });
-      }
-    });
+      this.videoWorker.on('progress', (job, progress) => {
+        if (job) {
+          this.updateProgress(
+            job.id as string,
+            'processing',
+            progress as number,
+            'Processing...',
+          );
+          predictionNotifier.notify(job.id as string, 'progress', { progress });
+        }
+      });
+      this.videoWorker.on('completed', (job, result) => {
+        if (job) {
+          this.updateProgress(
+            job.id as string,
+            'completed',
+            100,
+            'Done',
+            result,
+          );
+          predictionNotifier.notify(job.id as string, 'completed', { result });
+        }
+      });
+      this.videoWorker.on('failed', (job, err) => {
+        if (job) {
+          this.updateProgress(job.id as string, 'failed', 0, err.message);
+          predictionNotifier.notify(job.id as string, 'failed', {
+            message: err.message,
+          });
+        }
+      });
+    }
   }
 
   private updateProgress(

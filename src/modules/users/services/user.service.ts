@@ -239,7 +239,10 @@ export class UserService {
     const user = await this.userModel.findById(userId);
     if (!user || user.isDeleted) throw new NotFoundException('User not found');
 
-    if (updateData.username && updateData.username.toLowerCase() !== user.username) {
+    if (
+      updateData.username &&
+      updateData.username.toLowerCase() !== user.username
+    ) {
       const cleanUsername = updateData.username.toLowerCase().trim();
       const existing = await this.userModel.findOne({
         username: cleanUsername,

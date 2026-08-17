@@ -8,10 +8,10 @@
   "scripts": {
     "build": "nest build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
-    "start": "node --env-file=.env.local ./node_modules/@nestjs/cli/bin/nest.js start",
-    "start:dev": "node --env-file=.env.local ./node_modules/@nestjs/cli/bin/nest.js start --watch",
-    "start:debug": "node --env-file=.env.local ./node_modules/@nestjs/cli/bin/nest.js start --debug --watch",
-    "start:prod": "node --env-file=.env.prod dist/main",
+    "start": "nest start",
+    "start:dev": "nest start --watch",
+    "start:debug": "nest start --debug --watch",
+    "start:prod": "node dist/main",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\"",
     "test": "jest",
     "test:watch": "jest --watch",
@@ -96,7 +96,6 @@
     "typescript-eslint": "^8.20.0"
   },
   "overrides": {
-    "brace-expansion": "5.0.8",
     "@nestjs/swagger": {
       "js-yaml": "5.2.2"
     }

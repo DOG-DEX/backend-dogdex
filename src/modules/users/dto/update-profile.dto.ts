@@ -11,7 +11,8 @@ export class UpdateProfileDto {
   @IsString()
   @MaxLength(30)
   @Matches(/^[a-z0-9_]+$/, {
-    message: 'Username can only contain lowercase letters, numbers, and underscores',
+    message:
+      'Username can only contain lowercase letters, numbers, and underscores',
   })
   username?: string;
 

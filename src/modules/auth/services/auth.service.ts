@@ -272,22 +272,32 @@ export class AuthService {
     const user = await this.userService.getById(userId);
     if (!user) throw new NotFoundException('User not found');
 
-    const userWithPassword = await this.userService.getByEmail(user.email, true);
+    const userWithPassword = await this.userService.getByEmail(
+      user.email,
+      true,
+    );
     if (!userWithPassword || !userWithPassword.password) {
       throw new UnauthorizedException('User password record not found');
     }
 
-    const isMatch = await bcrypt.compare(currentPass, userWithPassword.password);
+    const isMatch = await bcrypt.compare(
+      currentPass,
+      userWithPassword.password,
+    );
     if (!isMatch) {
       throw new BadRequestException('Mật khẩu hiện tại không chính xác.');
     }
 
     if (currentPass === newPass) {
-      throw new BadRequestException('Mật khẩu mới không được trùng với mật khẩu hiện tại.');
+      throw new BadRequestException(
+        'Mật khẩu mới không được trùng với mật khẩu hiện tại.',
+      );
     }
 
     const hashedPassword = await bcrypt.hash(newPass, 10);
-    await this.userService.updateUserById(userId, { password: hashedPassword } as any);
+    await this.userService.updateUserById(userId, {
+      password: hashedPassword,
+    } as any);
 
     // Invalidate active session tokens for security
     await this.refreshTokenModel.deleteMany({ user: userId });

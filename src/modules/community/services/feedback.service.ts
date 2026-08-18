@@ -71,7 +71,7 @@ export class FeedbackService {
         'Không tìm thấy đường dẫn file cho phản hồi này.',
       );
 
-    let final_file_path = file_path;
+    const final_file_path = file_path;
 
     if (prediction.source === 'image_upload' && file_path) {
       const from_public_id =

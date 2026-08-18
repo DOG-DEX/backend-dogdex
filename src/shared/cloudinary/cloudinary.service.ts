@@ -22,9 +22,9 @@ const PUBLIC_FOLDERS = [
 export class CloudinaryService {
   constructor() {
     cloudinaryClient.config({
-      cloud_name: process.env.CLOUD_NAME_CLOUDINARY,
-      api_key: process.env.API_KEY_CLOUDINARY,
-      api_secret: process.env.API_SECRET_CLOUDINARY,
+      cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+      api_key: process.env.CLOUDINARY_API_KEY,
+      api_secret: process.env.CLOUDINARY_API_SECRET,
     });
   }
 
@@ -126,7 +126,7 @@ export class CloudinaryService {
     if (storedPath.startsWith('http') || storedPath.startsWith('data:'))
       return storedPath;
 
-    const CLOUD_NAME = process.env.CLOUD_NAME_CLOUDINARY;
+    const CLOUD_NAME = process.env.CLOUDINARY_CLOUD_NAME;
     const normalized = storedPath.replace(/\\/g, '/').replace(/^\/+/, '');
 
     const isCloudinaryPath =

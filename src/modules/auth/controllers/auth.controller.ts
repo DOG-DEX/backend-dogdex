@@ -1,4 +1,12 @@
-import { Controller, Post, Body, HttpCode, HttpStatus, Res, Req } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  HttpCode,
+  HttpStatus,
+  Res,
+  Req,
+} from '@nestjs/common';
 import type { Response, Request } from 'express';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { AuthService } from '../services/auth.service';
@@ -19,7 +27,7 @@ import { refreshTokenCookieOptions } from '../../../config/cookie.config';
 @ApiTags('Auth')
 @Controller('api/auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) { }
+  constructor(private readonly authService: AuthService) {}
 
   @Public()
   @Throttle({ default: { limit: 10, ttl: 60_000 } })
@@ -49,7 +57,11 @@ export class AuthController {
       loginDto.password,
     );
     if (result.refreshToken) {
-      res.cookie('refreshToken', result.refreshToken, refreshTokenCookieOptions);
+      res.cookie(
+        'refreshToken',
+        result.refreshToken,
+        refreshTokenCookieOptions,
+      );
     }
     return {
       message: 'Login successful!',
@@ -83,10 +95,15 @@ export class AuthController {
     @Res({ passthrough: true }) res: Response,
     @Body() refreshTokenDto?: Partial<RefreshTokenDto>,
   ) {
-    const token = req.cookies?.refreshToken || refreshTokenDto?.refreshToken || '';
+    const token =
+      req.cookies?.refreshToken || refreshTokenDto?.refreshToken || '';
     const result = await this.authService.refreshToken(token);
     if (result.refreshToken) {
-      res.cookie('refreshToken', result.refreshToken, refreshTokenCookieOptions);
+      res.cookie(
+        'refreshToken',
+        result.refreshToken,
+        refreshTokenCookieOptions,
+      );
     }
     return result;
   }

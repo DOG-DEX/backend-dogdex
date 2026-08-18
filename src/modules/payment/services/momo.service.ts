@@ -19,12 +19,8 @@ export class MomoService {
     const secretKey = this.config.get<string>('MOMO_SECRET_KEY') || '';
     const hostname =
       this.config.get<string>('MOMO_HOSTNAME') || 'test-payment.momo.vn';
-    const frontendUrl = (
-      this.config.get<string>('FRONTEND_URL') || 'http://localhost:3001'
-    ).trim();
-    const backendUrl = (
-      this.config.get<string>('BACKEND_URL') || 'http://localhost:3000'
-    ).trim();
+    const frontendUrl = (this.config.get<string>('FRONTEND_URL') || '').trim();
+    const backendUrl = (this.config.get<string>('BACKEND_URL') || '').trim();
 
     const redirectUrl = `${frontendUrl}/profile?upgrade_status=true`;
     const ipnUrl = `${backendUrl}/api/plans/momo-ipn`;

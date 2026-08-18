@@ -57,13 +57,43 @@ export class DogsWikiService {
     slug: string,
     lang: 'vi' | 'en' = 'en',
   ): Promise<DogBreedWikiDoc> {
+    const cleanSlug = (slug || '').trim();
+    const normalized = cleanSlug.toLowerCase().replace(/[\s_]+/g, '-');
+    const stripped = cleanSlug.toLowerCase().replace(/[\s_-]+/g, '');
+    const spaceSeparated = cleanSlug.replace(/[\s_-]+/g, ' ');
+
     const Model = this.getModel(lang);
-    const breed = await Model.findOne({
-      slug: { $regex: new RegExp(`^${slug}$`, 'i') },
+    const OtherModel = lang === 'vi' ? this.dogBreedWikiEnModel : this.dogBreedWikiViModel;
+
+    // 1. Direct and normalized slug / breed match in current language
+    let breed = await Model.findOne({
+      $or: [
+        { slug: { $regex: new RegExp(`^${cleanSlug}$`, 'i') } },
+        { slug: { $regex: new RegExp(`^${normalized}$`, 'i') } },
+        { slug: { $regex: new RegExp(stripped, 'i') } },
+        { breed: { $regex: new RegExp(`^${spaceSeparated}$`, 'i') } },
+        { breed: { $regex: new RegExp(cleanSlug, 'i') } },
+      ],
       isDeleted: false,
     }).lean();
-    if (!breed)
+
+    // 2. Fallback to alternative language model if not found
+    if (!breed) {
+      breed = await OtherModel.findOne({
+        $or: [
+          { slug: { $regex: new RegExp(`^${cleanSlug}$`, 'i') } },
+          { slug: { $regex: new RegExp(`^${normalized}$`, 'i') } },
+          { slug: { $regex: new RegExp(stripped, 'i') } },
+          { breed: { $regex: new RegExp(`^${spaceSeparated}$`, 'i') } },
+          { breed: { $regex: new RegExp(cleanSlug, 'i') } },
+        ],
+        isDeleted: false,
+      }).lean();
+    }
+
+    if (!breed) {
       throw new NotFoundException(`Breed not found with slug: '${slug}'`);
+    }
 
     if (breed.mediaPath) {
       const url = getCloudinaryUrl(breed.mediaPath);

@@ -9,30 +9,25 @@ export interface HealthRecordDoc extends Document {
   reminderSent?: boolean;
   notes?: string;
 
-  // New Fields
   vetName?: string;
+  vetClinic?: string;
   cost?: number;
   weight?: number; // kg
   symptoms?: string;
   diagnosis?: string;
 
-  attachments: string[]; // URLs
+  attachments?: string[];
   createdAt: Date;
   updatedAt: Date;
 }
 
-const healthRecordSchema = new Schema(
+export const healthRecordSchema = new Schema(
   {
-    dog_id: {
-      type: Schema.Types.ObjectId,
-      ref: 'DogProfile',
-      required: true,
-      index: true,
-    },
+    dog_id: { type: String, required: true, index: true },
     type: {
       type: String,
       enum: ['vaccine', 'checkup', 'medicine', 'surgery', 'hygiene', 'other'],
-      required: true,
+      default: 'checkup',
     },
     title: { type: String, required: true },
     date: { type: Date, required: true },
@@ -41,6 +36,7 @@ const healthRecordSchema = new Schema(
     notes: { type: String },
 
     vetName: { type: String },
+    vetClinic: { type: String },
     cost: { type: Number, min: 0 },
     weight: { type: Number, min: 0 },
     symptoms: { type: String },
@@ -50,6 +46,7 @@ const healthRecordSchema = new Schema(
   },
   {
     timestamps: true,
+    collection: 'health_records',
     toJSON: {
       transform(doc: any, ret: any) {
         ret.id = ret._id;
@@ -60,8 +57,6 @@ const healthRecordSchema = new Schema(
   },
 );
 
-const HealthRecord = mongoose.model<HealthRecordDoc>(
-  'HealthRecord',
-  healthRecordSchema,
-);
-export { HealthRecord };
+export const HealthRecordModel =
+  mongoose.models.HealthRecord ||
+  mongoose.model<HealthRecordDoc>('HealthRecord', healthRecordSchema);

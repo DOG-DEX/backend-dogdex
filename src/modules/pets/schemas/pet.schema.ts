@@ -1,35 +1,72 @@
-import mongoose, { Schema, Document, Types } from 'mongoose';
+import mongoose, { Schema, Document } from 'mongoose';
 
-export type PetDoc = Document & {
+export interface PetDoc extends Document {
+  owner_id: string;
   name: string;
-  breed?: string;
-  age?: number;
-  owner: Types.ObjectId;
-  qrCode?: string;
+  breed: string;
+  birthday?: Date;
+  gender: 'male' | 'female';
+  avatarPath?: string;
   photos: string[];
-  linkedProducts: Types.ObjectId[];
+
+  sterilized: boolean;
+
+  isLost: boolean;
+  lastSeenLocation?: {
+    lat: number;
+    lng: number;
+    address: string;
+  };
+  lostAt?: Date;
+
+  attributes: {
+    color?: string;
+    pattern?: string;
+    size?: string;
+  };
   isDeleted: boolean;
   createdAt: Date;
   updatedAt: Date;
-};
+}
 
-const petSchema = new Schema<PetDoc>(
+export const petSchema = new Schema(
   {
-    name: { type: String, required: true, trim: true },
-    breed: { type: String },
-    age: { type: Number },
-    owner: {
-      type: Schema.Types.ObjectId,
-      ref: 'User',
-      required: true,
-      index: true,
-    },
-    qrCode: { type: String, unique: true, sparse: true },
+    owner_id: { type: String, required: true, index: true },
+    name: { type: String, required: true },
+    breed: { type: String, required: true, index: true },
+    birthday: { type: Date },
+    gender: { type: String, enum: ['male', 'female'], required: true },
+    avatarPath: { type: String },
     photos: [{ type: String }],
-    linkedProducts: [{ type: Schema.Types.ObjectId, ref: 'Product' }],
+    sterilized: { type: Boolean, default: false },
+
+    attributes: {
+      color: { type: String, index: true },
+      pattern: String,
+      size: String,
+    },
+
+    isLost: { type: Boolean, default: false, index: true },
+    lastSeenLocation: {
+      lat: Number,
+      lng: Number,
+      address: String,
+    },
+    lostAt: Date,
     isDeleted: { type: Boolean, default: false, select: false },
   },
-  { timestamps: true, collection: 'pets' },
+  {
+    timestamps: true,
+    collection: 'dog_profiles',
+    toJSON: {
+      transform(doc: any, ret: any) {
+        ret.id = ret._id;
+        delete ret._id;
+        delete ret.__v;
+        delete ret.isDeleted;
+      },
+    },
+  },
 );
 
-export const PetModel = mongoose.model<PetDoc>('Pet', petSchema);
+export const PetModel = mongoose.models.Pet || mongoose.model<PetDoc>('Pet', petSchema);

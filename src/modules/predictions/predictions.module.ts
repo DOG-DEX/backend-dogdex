@@ -4,11 +4,11 @@ import { MongooseModule } from '@nestjs/mongoose';
 // Schemas (canonical location)
 import { PredictionHistoryModel } from './schemas/prediction_history.model';
 import { AIModel } from './schemas/ai_models.model';
-import { MediaModel } from '../media/schemas/medias.model';
-import { DirectoryModel } from '../media/schemas/directory.model';
-import { UserModel } from '../users/schemas/user.model';
-import { FeedbackModel } from '../community/schemas/feedback.model';
-import { AnalyticsEventModel } from '../analytics/schemas/analytics_event.model';
+import { MediaModel } from '@/modules/media/schemas/medias.model';
+import { DirectoryModel } from '@/modules/media/schemas/directory.model';
+import { UserModel } from '@/modules/users/schemas/user.model';
+import { FeedbackModel } from '@/modules/community/schemas/feedback.model';
+import { AnalyticsEventModel } from '@/modules/analytics/schemas/analytics_event.model';
 
 // Controller
 import { PredictionController } from './controllers/prediction.controller';
@@ -20,10 +20,17 @@ import { PredictionHistoryService } from './services/prediction-history.service'
 import { AIModelService } from './services/ai-model.service';
 
 // Shared services registered globally — only register here for local model access
-import { AnalyticsService } from '../analytics/services/analytics.service';
+import { AnalyticsService } from '@/modules/analytics/services/analytics.service';
+
+import { PredictionStreamGateway } from './gateways/prediction-stream.gateway';
+import { PredictionStatusGateway } from './gateways/prediction-status.gateway';
+import { AIClientService } from '@/shared/ai-client/ai-client.service';
+import { PredictionRateLimitGuard } from '@/common/guards/prediction-rate-limit.guard';
+import { GeminiModule } from '@/shared/gemini/gemini.module';
 
 @Module({
   imports: [
+    GeminiModule,
     MongooseModule.forFeature([
       { name: 'PredictionHistory', schema: PredictionHistoryModel.schema },
       { name: 'AIModel', schema: AIModel.schema },
@@ -41,6 +48,10 @@ import { AnalyticsService } from '../analytics/services/analytics.service';
     PredictionHistoryService,
     AIModelService,
     AnalyticsService,
+    AIClientService,
+    PredictionStreamGateway,
+    PredictionStatusGateway,
+    PredictionRateLimitGuard,
   ],
   exports: [PredictionService, PredictionHistoryService, AIModelService],
 })

@@ -40,14 +40,29 @@ export interface UploadJobData {
   analyticsData: any;
 }
 
+let uploadProcessor: ((data: UploadJobData) => Promise<void>) | null = null;
+
+export const setUploadProcessor = (
+  processor: (data: UploadJobData) => Promise<void>,
+) => {
+  uploadProcessor = processor;
+};
+
 const isRedisDisabled = process.env.USE_REDIS === 'false';
 
 export const uploadQueue: Queue<UploadJobData> = isRedisDisabled
   ? ({
-      add: async (name: string, data: any) => {
+      add: async (name: string, data: UploadJobData) => {
         logger.info(
-          `[UploadQueue] Redis disabled (USE_REDIS=false). Bypassing job: ${name}`,
+          `[UploadQueue] Redis disabled (USE_REDIS=false). Running job directly: ${name}`,
         );
+        if (uploadProcessor) {
+          setImmediate(() => {
+            uploadProcessor!(data).catch((err) =>
+              logger.error(`[UploadQueue] Direct job execution failed:`, err),
+            );
+          });
+        }
         return { id: `mock-upload-job-${Date.now()}` } as any;
       },
     } as any)
@@ -65,6 +80,13 @@ if (!isRedisDisabled) {
       logger.info(
         `[UploadWorker] Processing job ${job.id} for prediction ${job.data.predictionId}`,
       );
+      if (uploadProcessor) {
+        await uploadProcessor(job.data);
+      } else {
+        logger.warn(
+          `[UploadWorker] No uploadProcessor registered for job ${job.id}`,
+        );
+      }
     },
     {
       connection: new IORedis(
@@ -95,3 +117,4 @@ if (!isRedisDisabled) {
     );
   });
 }
+

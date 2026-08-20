@@ -47,6 +47,24 @@ export class AllExceptionsFilter implements ExceptionFilter {
       message,
     };
 
+    // Clean up temporary local uploaded files if request throws an error
+    const req = ctx.getRequest();
+    if (req) {
+      import('fs').then(({ existsSync, promises }) => {
+        if (req.file?.path && existsSync(req.file.path)) {
+          promises.unlink(req.file.path).catch(() => {});
+        }
+        if (Array.isArray(req.files)) {
+          for (const f of req.files) {
+            if (f?.path && existsSync(f.path)) {
+              promises.unlink(f.path).catch(() => {});
+            }
+          }
+        }
+      });
+    }
+
     httpAdapter.reply(ctx.getResponse(), responseBody, httpStatus);
   }
 }
+

@@ -36,14 +36,29 @@ export interface PredictionJobData {
   lang?: 'vi' | 'en';
 }
 
+let predictionProcessor: ((data: PredictionJobData) => Promise<void>) | null = null;
+
+export const setPredictionProcessor = (
+  processor: (data: PredictionJobData) => Promise<void>,
+) => {
+  predictionProcessor = processor;
+};
+
 const isRedisDisabled = process.env.USE_REDIS === 'false';
 
 export const predictionQueue: Queue<PredictionJobData> = isRedisDisabled
   ? ({
-      add: async (name: string, data: any) => {
+      add: async (name: string, data: PredictionJobData) => {
         logger.info(
-          `[PredictionQueue] Redis disabled (USE_REDIS=false). Bypassing job: ${name}`,
+          `[PredictionQueue] Redis disabled (USE_REDIS=false). Running job directly: ${name}`,
         );
+        if (predictionProcessor) {
+          setImmediate(() => {
+            predictionProcessor!(data).catch((err) =>
+              logger.error(`[PredictionQueue] Direct job execution failed:`, err),
+            );
+          });
+        }
         return { id: `mock-prediction-job-${Date.now()}` } as any;
       },
     } as any)
@@ -59,6 +74,13 @@ if (!isRedisDisabled) {
     'prediction-queue',
     async (job) => {
       logger.info(`[PredictionWorker] Processing job ${job.id}`);
+      if (predictionProcessor) {
+        await predictionProcessor(job.data);
+      } else {
+        logger.warn(
+          `[PredictionWorker] No predictionProcessor registered for job ${job.id}`,
+        );
+      }
     },
     {
       connection: new IORedis(
@@ -69,3 +91,4 @@ if (!isRedisDisabled) {
     },
   );
 }
+

@@ -10,6 +10,7 @@ import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { ConfigService } from '@nestjs/config';
 
 import { NestExpressApplication } from '@nestjs/platform-express';
+import { WsAdapter } from '@nestjs/platform-ws';
 import { ValidationPipe } from '@nestjs/common';
 import { join } from 'path';
 import { existsSync, mkdirSync } from 'fs';
@@ -17,9 +18,12 @@ import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
 
 import { json, urlencoded } from 'express';
+import { logger } from './common/utils/logger.util';
 
 async function bootstrap() {
-  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
+    logger: ['warn', 'error'],
+  });
   const configService = app.get(ConfigService);
   const isProduction = configService.get<string>('NODE_ENV') === 'production';
 
@@ -49,6 +53,9 @@ async function bootstrap() {
     origin: isProduction ? configuredOrigins : true,
     credentials: true,
   });
+
+  // Enable WebSockets
+  app.useWebSocketAdapter(new WsAdapter(app));
 
   // Global Validation Pipe
   app.useGlobalPipes(
@@ -95,5 +102,9 @@ async function bootstrap() {
 
   const port = configService.get<number>('PORT', 3000);
   await app.listen(port);
+
+  logger.info(`DOGDEX BACKEND SERVER RUNNING AT: http://localhost:${port}`);
+  logger.info(`SWAGGER API DOCS: http://localhost:${port}/swagger-ui`);
+  logger.info(`PYTHON FASTAPI AI SERVICE: ${configService.get('AI_SERVICE_URL') || 'Not Configured'}`);
 }
 bootstrap();

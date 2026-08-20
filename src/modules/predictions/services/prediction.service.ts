@@ -7,16 +7,19 @@ import {
   PredictionHistoryDoc,
   StreamResultPayload,
 } from '../schemas/prediction_history.model';
-import { MediaDoc } from '../../media/schemas/medias.model';
-import { DirectoryDoc } from '../../media/schemas/directory.model';
+import { MediaDoc } from '@/modules/media/schemas/medias.model';
+import { DirectoryDoc } from '@/modules/media/schemas/directory.model';
 import { AIModelService } from './ai-model.service';
-import { AnalyticsService } from '../../analytics/services/analytics.service';
-import { MediaProcessorService } from '../../../shared/media-processor/media-processor.service';
-import { CloudinaryService } from '../../../shared/cloudinary/cloudinary.service';
-import { AIClientService } from '../../../shared/ai-client/ai-client.service';
+import { AnalyticsService } from '@/modules/analytics/services/analytics.service';
+import { MediaProcessorService } from '@/shared/media-processor/media-processor.service';
+import { CloudinaryService } from '@/shared/cloudinary/cloudinary.service';
+import { AIClientService } from '@/shared/ai-client/ai-client.service';
 import { PredictionQueueService } from './prediction-queue.service';
-import { logger } from '../../../common/utils/logger.util';
-import { PREDICTION_SOURCES } from '../../../common/constants/prediction.constants';
+import { logger } from '@/common/utils/logger.util';
+import { PREDICTION_SOURCES } from '@/common/constants/prediction.constants';
+
+import { GeminiService } from '@/shared/gemini/gemini.service';
+import { redisClient } from '@/common/utils/redis.util';
 
 @Injectable()
 export class PredictionService {
@@ -31,7 +34,8 @@ export class PredictionService {
     private readonly cloudinary: CloudinaryService,
     private readonly aiClient: AIClientService,
     private readonly queueService: PredictionQueueService,
-  ) {}
+    private readonly geminiService: GeminiService,
+  ) { }
 
   // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -98,40 +102,12 @@ export class PredictionService {
       processingTime: 0,
     });
 
-    // Upload original file to Cloudinary eagerly so we can immediately
-    // delete the local disk file — prevents orphaned files in public\uploads
-    const filenameWithoutExt = `${file.originalname.replace(/\.[^/.]+$/, '')}_${Date.now()}`;
-    let cloudinaryPath = file.filename || file.originalname;
-    try {
-      const uploadRes = await this.cloudinary.uploadFile(
-        file.path,
-        filenameWithoutExt,
-        `public/uploads/${type}s`,
-        type,
-        'private',
-      );
-      cloudinaryPath = `${uploadRes.public_id}.${uploadRes.format}`;
-      await this.mediaModel.findByIdAndUpdate(newMedia._id, {
-        mediaPath: cloudinaryPath,
-      });
-    } catch (uploadErr) {
-      logger.warn(
-        '[makePrediction] Cloudinary pre-upload failed, queue will retry:',
-        uploadErr,
-      );
-    } finally {
-      // Always delete the local disk file after attempting Cloudinary upload
-      const { existsSync, promises: fsPromises } = await import('fs');
-      if (file.path && existsSync(file.path))
-        await fsPromises.unlink(file.path).catch(() => {});
-    }
-
     await this.queueService.enqueuePrediction({
       predictionId: predictionId.toString(),
       mediaId: newMedia._id.toString(),
       userId,
       directoryId: directoryId?.toString(),
-      filePath: cloudinaryPath, // cloudinary path now, not local disk path
+      filePath: file.path,
       fileOriginalName: file.originalname,
       fileType: type,
       modelName,
@@ -146,6 +122,7 @@ export class PredictionService {
     return { predictionId: predictionId.toString(), status: 'processing' };
   }
 
+
   // ─── Ephemeral (no DB save) ───────────────────────────────────────────────────
 
   async makeEphemeralPrediction(
@@ -159,8 +136,8 @@ export class PredictionService {
         userId: userId ? new Types.ObjectId(userId) : undefined,
         buffer,
         mediaType: 'image',
-        resolve: () => {},
-        reject: () => {},
+        resolve: () => { },
+        reject: () => { },
       });
       if (!result?.predictions) throw new Error('Invalid result from AI');
       return {
@@ -172,7 +149,7 @@ export class PredictionService {
       if (file?.path) {
         const { existsSync, promises: fsPromises } = await import('fs');
         if (existsSync(file.path))
-          await fsPromises.unlink(file.path).catch(() => {});
+          await fsPromises.unlink(file.path).catch(() => { });
       }
     }
   }
@@ -222,8 +199,8 @@ export class PredictionService {
           userId: userId ? new Types.ObjectId(userId) : undefined,
           buffer,
           mediaType: 'image',
-          resolve: () => {},
-          reject: () => {},
+          resolve: () => { },
+          reject: () => { },
         }),
         this.cloudinary
           .uploadFile(
@@ -275,7 +252,7 @@ export class PredictionService {
     } finally {
       if (file.path) {
         import('fs').then(({ existsSync, promises }) => {
-          if (existsSync(file.path)) promises.unlink(file.path).catch(() => {});
+          if (existsSync(file.path)) promises.unlink(file.path).catch(() => { });
         });
       }
     }
@@ -444,8 +421,8 @@ export class PredictionService {
         buffer,
         originalName: fileOriginalName,
         mediaType: fileType,
-        resolve: () => {},
-        reject: () => {},
+        resolve: () => { },
+        reject: () => { },
       });
 
       await this.historyModel.findByIdAndUpdate(predictionId, {
@@ -480,7 +457,7 @@ export class PredictionService {
         processedMediaPath: 'failed',
       });
       const { existsSync, promises } = await import('fs');
-      if (existsSync(filePath)) await promises.unlink(filePath).catch(() => {});
+      if (existsSync(filePath)) await promises.unlink(filePath).catch(() => { });
     }
   }
 
@@ -559,9 +536,55 @@ export class PredictionService {
       });
     } finally {
       const { existsSync, promises } = await import('fs');
-      if (existsSync(filePath)) await promises.unlink(filePath).catch(() => {});
+      if (existsSync(filePath)) await promises.unlink(filePath).catch(() => { });
       if (processedMediaPathTemp && existsSync(processedMediaPathTemp))
-        await promises.unlink(processedMediaPathTemp).catch(() => {});
+        await promises.unlink(processedMediaPathTemp).catch(() => { });
+    }
+  }
+
+  // ─── Gemini AI Breed Chatbot ──────────────────────────────────────────────────
+
+  async chatWithGemini(
+    breedSlug: string,
+    message: string,
+    lang: 'vi' | 'en' = 'vi',
+    userId?: string,
+  ) {
+    const breedName = breedSlug.replace(/-/g, ' ');
+    const reply = await this.geminiService.chatWithBreed(breedName, message, lang);
+
+    if (redisClient && userId) {
+      const historyKey = `chat:history:${userId}:${breedSlug}`;
+      try {
+        const item = JSON.stringify({ role: 'user', content: message, reply, timestamp: new Date().toISOString() });
+        await redisClient.lpush(historyKey, item);
+        await redisClient.ltrim(historyKey, 0, 49); // Keep last 50 messages
+      } catch (e) {
+        logger.warn('[ChatHistory] Redis push failed:', e);
+      }
+    }
+
+    return { reply };
+  }
+
+  async getChatHistory(breedSlug: string, userId?: string) {
+    if (!redisClient || !userId) return { history: [] };
+    const historyKey = `chat:history:${userId}:${breedSlug}`;
+    try {
+      const items = await redisClient.lrange(historyKey, 0, 49);
+      if (!Array.isArray(items)) return { history: [] };
+      const history = (items as string[])
+        .map((item) => {
+          try {
+            return JSON.parse(item);
+          } catch {
+            return null;
+          }
+        })
+        .filter(Boolean);
+      return { history };
+    } catch {
+      return { history: [] };
     }
   }
 }

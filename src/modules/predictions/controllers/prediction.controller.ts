@@ -28,6 +28,7 @@ import { PredictionService } from '../services/prediction.service';
 import { PredictionHistoryService } from '../services/prediction-history.service';
 import { AIModelService } from '../services/ai-model.service';
 import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
+import { PredictionRateLimitGuard } from '../../../common/guards/prediction-rate-limit.guard';
 import { Public } from '../../../common/decorators/public.decorator';
 import { CurrentUser } from '../../../common/decorators/current-user.decorator';
 import {
@@ -37,6 +38,7 @@ import {
 import { Throttle } from '@nestjs/throttler';
 
 @ApiTags('Predictions')
+@UseGuards(PredictionRateLimitGuard)
 @Controller('api/predictions')
 export class PredictionController {
   constructor(
@@ -67,18 +69,47 @@ export class PredictionController {
 
   @Public()
   @Throttle({ default: { limit: 10, ttl: 60_000 } })
-  @Post('predict/ephemeral')
+  @Post('predict/image')
   @UseInterceptors(FileInterceptor('file', imageUploadOptions))
   @ApiConsumes('multipart/form-data')
-  @ApiOperation({ summary: 'Instant prediction without saving to database' })
-  async predictEphemeral(
+  @ApiOperation({ summary: 'Predict dog breed from image file (v2 alias)' })
+  async predictImage(
+    @Req() req: Request,
     @UploadedFile() file: Express.Multer.File,
     @CurrentUser('userId') userId?: string,
   ) {
     if (!file) {
-      throw new BadRequestException('Vui lòng tải lên tệp ảnh.');
+      throw new BadRequestException('Vui lòng tải lên 1 tệp hình ảnh.');
     }
-    return this.predictionService.makeEphemeralPrediction(file, userId);
+    return this.predictionService.makePrediction(userId, file, 'image', req);
+  }
+
+  @Public()
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
+  @Post('predict/video')
+  @UseInterceptors(FileInterceptor('file', mediaUploadOptions))
+  @ApiConsumes('multipart/form-data')
+  @ApiOperation({ summary: 'Predict dog breed from video file (v2 alias)' })
+  async predictVideo(
+    @Req() req: Request,
+    @UploadedFile() file: Express.Multer.File,
+    @CurrentUser('userId') userId?: string,
+  ) {
+    if (!file) {
+      throw new BadRequestException('Vui lòng tải lên 1 tệp video.');
+    }
+    return this.predictionService.makePrediction(userId, file, 'video', req);
+  }
+
+  @Public()
+  @Post('stream/save')
+  @ApiOperation({ summary: 'Save live stream prediction snapshot result' })
+  async saveStream(
+    @Req() req: Request,
+    @Body() payload: any,
+    @CurrentUser('userId') userId?: string,
+  ) {
+    return this.predictionService.saveStreamPrediction(userId, payload, req);
   }
 
   @Public()
@@ -167,13 +198,44 @@ export class PredictionController {
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
   @Delete('history/:id')
-  @ApiOperation({ summary: 'Soft delete prediction history item' })
+  @ApiOperation({ summary: 'Delete prediction history item by ID' })
   async deleteHistory(
     @CurrentUser('userId') userId: string,
     @Param('id') historyId: string,
   ) {
-    await this.historyService.deleteHistoryForUser(userId, historyId);
-    return { message: 'Đã xóa mục lịch sử dự đoán thành công.' };
+    return this.historyService.deleteHistoryForUser(userId, historyId);
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // GEMINI AI BREED CHATBOT ENDPOINTS
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  @Public()
+  @Throttle({ default: { limit: 20, ttl: 60_000 } })
+  @Post('chat/:breedSlug')
+  @ApiOperation({ summary: 'Chat with Gemini AI about a specific dog breed' })
+  async chatWithGemini(
+    @Param('breedSlug') breedSlug: string,
+    @Body('message') message: string,
+    @Req() req: Request,
+    @CurrentUser('userId') userId?: string,
+  ) {
+    if (!message) {
+      throw new BadRequestException('Nội dung tin nhắn không được để trống.');
+    }
+    const langHeader = (req.headers['accept-language'] || 'vi').split(',')[0].toLowerCase();
+    const lang = langHeader === 'vi' ? 'vi' : 'en';
+    return this.predictionService.chatWithGemini(breedSlug, message, lang, userId);
+  }
+
+  @Public()
+  @Get('chat/:breedSlug/history')
+  @ApiOperation({ summary: 'Get Gemini AI chat history for a breed' })
+  async getChatHistory(
+    @Param('breedSlug') breedSlug: string,
+    @CurrentUser('userId') userId?: string,
+  ) {
+    return this.predictionService.getChatHistory(breedSlug, userId);
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
